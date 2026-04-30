@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/Telezone/static/css/main.e6c13ad2.css",
-    "main.js": "/Telezone/static/js/main.ba53d038.js",
-    "static/js/453.825386d9.chunk.js": "/Telezone/static/js/453.825386d9.chunk.js",
-    "index.html": "/Telezone/index.html",
-    "main.e6c13ad2.css.map": "/Telezone/static/css/main.e6c13ad2.css.map",
-    "main.ba53d038.js.map": "/Telezone/static/js/main.ba53d038.js.map",
-    "453.825386d9.chunk.js.map": "/Telezone/static/js/453.825386d9.chunk.js.map"
+    "main.css": "/frontend/static/css/main.e6c13ad2.css",
+    "main.js": "/frontend/static/js/main.dd7db1d1.js",
+    "static/js/453.825386d9.chunk.js": "/frontend/static/js/453.825386d9.chunk.js",
+    "index.html": "/frontend/index.html",
+    "main.e6c13ad2.css.map": "/frontend/static/css/main.e6c13ad2.css.map",
+    "main.dd7db1d1.js.map": "/frontend/static/js/main.dd7db1d1.js.map",
+    "453.825386d9.chunk.js.map": "/frontend/static/js/453.825386d9.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.e6c13ad2.css",
-    "static/js/main.ba53d038.js"
+    "static/js/main.dd7db1d1.js"
   ]
 }
