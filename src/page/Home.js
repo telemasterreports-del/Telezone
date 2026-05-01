@@ -99,30 +99,52 @@ function Home() {
       {loading && <p style={styles.loading}>Processing file...</p>}
 
       {/* ================= CDR ================= */}
-      {!loading && mode === "cdr" && result?.report && (
-        <div style={styles.tableCard}>
-          <h3>CDR Connectivity</h3>
+      {/* ================= CDR ================= */}
+{!loading && mode === "cdr" && result?.report && (
+  <div style={styles.tableCard}>
+    <h3 style={styles.sectionTitle}>📊 CDR Connectivity Report</h3>
 
-          <div style={styles.tableWrapper}>
-            <table style={styles.table}>
-              <thead>
-                <tr>
-                  <th>Lead ID</th>
-                  <th>Connectivity</th>
-                </tr>
-              </thead>
-              <tbody>
-                {result.report.map((item, i) => (
-                  <tr key={i}>
-                    <td>{item.leadId}</td>
-                    <td>{item.connectivity}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+    <div style={styles.tableWrapper}>
+      <table style={styles.table}>
+        <thead>
+          <tr>
+            <th style={styles.th}>Lead ID</th>
+            <th style={styles.th}>Total Calls</th>
+            <th style={styles.th}>Connected Calls</th>
+            <th style={styles.th}>Connectivity</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {result.report.map((item, i) => (
+            <tr
+              key={i}
+              style={i % 2 === 0 ? styles.rowEven : styles.rowOdd}
+            >
+              <td style={styles.td}>{item.leadId}</td>
+              <td style={styles.td}>{item.totalCalls}</td>
+              <td style={styles.td}>{item.connectedCalls}</td>
+              <td
+                style={{
+                  ...styles.td,
+                  fontWeight: "600",
+                  color:
+                    parseFloat(item.connectivity) > 50
+                      ? "green"
+                      : parseFloat(item.connectivity) > 20
+                      ? "#f59e0b"
+                      : "red",
+                }}
+              >
+                {item.connectivity}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+)}
 
       {/* ================= TIMEZONE ================= */}
       {!loading && mode === "timezone" && result?.summary && (
@@ -164,6 +186,33 @@ const styles = {
     padding: "30px",
     fontFamily: "Segoe UI, sans-serif",
   },
+  sectionTitle: {
+  marginBottom: "15px",
+  fontWeight: "600",
+  color: "#1e293b",
+},
+
+th: {
+  background: "#f1f5f9",
+  padding: "12px",
+  textAlign: "left",
+  fontSize: "14px",
+  borderBottom: "2px solid #e2e8f0",
+},
+
+td: {
+  padding: "12px",
+  fontSize: "14px",
+  borderBottom: "1px solid #eee",
+},
+
+rowEven: {
+  background: "#ffffff",
+},
+
+rowOdd: {
+  background: "#f9fafb",
+},
   header: {
     display: "flex",
     justifyContent: "space-between",
