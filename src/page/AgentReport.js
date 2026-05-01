@@ -34,14 +34,31 @@ function AgentReport() {
     }
   };
 
+  // ✅ Clean columns (hide internal fields)
   const getColumns = () => {
     if (data.length === 0) return [];
+
     return Object.keys(data[0]).filter(
-      (key) => key !== "agent" && key !== "total"
+      (key) =>
+        key !== "agent" &&
+        key !== "total" &&
+        key !== "talkTimeTotal" &&
+        key !== "callCount"
     );
   };
 
   const columns = getColumns();
+
+  // ✅ format talk time
+  const formatValue = (col, value) => {
+    if (value === undefined || value === null) return "-";
+
+    if (col === "avgTalkTime") {
+      return Number(value).toFixed(2);
+    }
+
+    return value;
+  };
 
   return (
     <div style={styles.container}>
@@ -88,18 +105,26 @@ function AgentReport() {
                   <th style={styles.th}>Agent</th>
                   <th style={styles.th}>Total</th>
                   {columns.map((col) => (
-                    <th key={col} style={styles.th}>{col}</th>
+                    <th key={col} style={styles.th}>
+                      {col}
+                    </th>
                   ))}
                 </tr>
               </thead>
 
               <tbody>
                 {data.map((agent, index) => (
-                  <tr key={index} style={index % 2 === 0 ? styles.rowEven : styles.rowOdd}>
+                  <tr
+                    key={index}
+                    style={index % 2 === 0 ? styles.rowEven : styles.rowOdd}
+                  >
                     <td style={styles.td}>{agent.agent}</td>
                     <td style={styles.td}>{agent.total}</td>
+
                     {columns.map((col) => (
-                      <td key={col} style={styles.td}>{agent[col]}</td>
+                      <td key={col} style={styles.td}>
+                        {formatValue(col, agent[col])}
+                      </td>
                     ))}
                   </tr>
                 ))}
