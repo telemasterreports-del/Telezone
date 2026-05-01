@@ -20,7 +20,7 @@ function AgentReport() {
       setLoading(true);
 
       const res = await axios.post(
-        "http://98.88.247.111/agent-report",
+        "/api/agent-report",
         formData
       );
 

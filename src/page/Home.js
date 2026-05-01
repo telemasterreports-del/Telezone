@@ -25,10 +25,10 @@ function Home() {
       let res;
 
       if (mode === "cdr") {
-        res = await axios.post("http://98.88.247.111/analyze", formData);
+        res = await axios.post("/api/analyze", formData);
       } else {
         formData.append("mode", mode);
-        res = await axios.post("http://98.88.247.111/upload", formData);
+        res = await axios.post("/api/upload", formData);
       }
 
       setResult(res.data);
