@@ -19,10 +19,7 @@ function AgentReport() {
     try {
       setLoading(true);
 
-      const res = await axios.post(
-        "/api/agent-report",
-        formData
-      );
+      const res = await axios.post("/api/agent-report", formData);
 
       const sorted = res.data.sort((a, b) => b.total - a.total);
       setData(sorted);
@@ -34,7 +31,7 @@ function AgentReport() {
     }
   };
 
-  // ✅ Clean columns (hide internal fields)
+  // ✅ Columns
   const getColumns = () => {
     if (data.length === 0) return [];
 
@@ -49,7 +46,7 @@ function AgentReport() {
 
   const columns = getColumns();
 
-  // ✅ format talk time
+  // ✅ Format values
   const formatValue = (col, value) => {
     if (value === undefined || value === null) return "-";
 
@@ -60,12 +57,46 @@ function AgentReport() {
     return value;
   };
 
+  // ✅ Calculate averages
+  const getAverages = () => {
+    if (data.length === 0) return {};
+
+    const totals = {};
+    const count = data.length;
+
+    columns.forEach((col) => {
+      totals[col] = 0;
+    });
+
+    data.forEach((agent) => {
+      columns.forEach((col) => {
+        totals[col] += Number(agent[col]) || 0;
+      });
+    });
+
+    const averages = {};
+    columns.forEach((col) => {
+      averages[col] = (totals[col] / count).toFixed(2);
+    });
+
+    return averages;
+  };
+
+  const averages = getAverages();
+
+  // ✅ Summary stats
+  const totalAgents = data.length;
+  const totalCalls = data.reduce((sum, a) => sum + (a.total || 0), 0);
+  const avgTalkTime =
+    data.reduce((sum, a) => sum + (a.avgTalkTime || 0), 0) /
+      (data.length || 1);
+
   return (
     <div style={styles.container}>
+      {/* Upload Card */}
       <div style={styles.card}>
         <h2 style={styles.title}>Agent Performance Report</h2>
 
-        {/* Upload Section */}
         <div style={styles.uploadGrid}>
           <div style={styles.inputGroup}>
             <label style={styles.label}>CDR File</label>
@@ -93,7 +124,27 @@ function AgentReport() {
         </button>
       </div>
 
-      {/* Table Section */}
+      {/* Summary */}
+      {!loading && data.length > 0 && (
+        <div style={styles.statsRow}>
+          <div style={styles.statCard}>
+            <p>Total Agents</p>
+            <h2>{totalAgents}</h2>
+          </div>
+
+          <div style={styles.statCard}>
+            <p>Total Calls</p>
+            <h2>{totalCalls}</h2>
+          </div>
+
+          <div style={styles.statCard}>
+            <p>Avg Talk Time</p>
+            <h2>{avgTalkTime.toFixed(2)}</h2>
+          </div>
+        </div>
+      )}
+
+      {/* Table */}
       {!loading && data.length > 0 && (
         <div style={styles.tableCard}>
           <h3 style={styles.subtitle}>Agent Summary</h3>
@@ -103,9 +154,9 @@ function AgentReport() {
               <thead>
                 <tr>
                   <th style={styles.th}>Agent</th>
-                  <th style={styles.th}>Total</th>
+                  <th style={styles.thCenter}>Total</th>
                   {columns.map((col) => (
-                    <th key={col} style={styles.th}>
+                    <th key={col} style={styles.thCenter}>
                       {col}
                     </th>
                   ))}
@@ -119,15 +170,27 @@ function AgentReport() {
                     style={index % 2 === 0 ? styles.rowEven : styles.rowOdd}
                   >
                     <td style={styles.td}>{agent.agent}</td>
-                    <td style={styles.td}>{agent.total}</td>
+                    <td style={styles.tdCenter}>{agent.total}</td>
 
                     {columns.map((col) => (
-                      <td key={col} style={styles.td}>
+                      <td key={col} style={styles.tdCenter}>
                         {formatValue(col, agent[col])}
                       </td>
                     ))}
                   </tr>
                 ))}
+
+                {/* 🔥 Average Row */}
+                <tr style={styles.avgRow}>
+                  <td style={styles.td}><b>Average</b></td>
+                  <td style={styles.tdCenter}>-</td>
+
+                  {columns.map((col) => (
+                    <td key={col} style={styles.tdCenter}>
+                      <b>{averages[col]}</b>
+                    </td>
+                  ))}
+                </tr>
               </tbody>
             </table>
           </div>
@@ -146,7 +209,7 @@ const styles = {
     minHeight: "100vh",
     background: "#f5f7fa",
     padding: "20px",
-    fontFamily: "Arial, sans-serif",
+    fontFamily: "Segoe UI, sans-serif",
   },
   card: {
     background: "#fff",
@@ -159,7 +222,6 @@ const styles = {
   title: {
     marginBottom: "20px",
     fontWeight: "600",
-    color: "#333",
   },
   uploadGrid: {
     display: "flex",
@@ -171,16 +233,12 @@ const styles = {
     minWidth: "250px",
   },
   label: {
-    display: "block",
     marginBottom: "6px",
-    fontSize: "14px",
-    color: "#555",
+    display: "block",
   },
   input: {
     width: "100%",
     padding: "8px",
-    borderRadius: "6px",
-    border: "1px solid #ccc",
   },
   button: {
     marginTop: "20px",
@@ -190,8 +248,24 @@ const styles = {
     border: "none",
     borderRadius: "6px",
     cursor: "pointer",
-    fontWeight: "500",
   },
+
+  statsRow: {
+    display: "flex",
+    gap: "15px",
+    marginTop: "20px",
+    flexWrap: "wrap",
+  },
+  statCard: {
+    flex: 1,
+    minWidth: "150px",
+    background: "#fff",
+    padding: "15px",
+    borderRadius: "10px",
+    textAlign: "center",
+    boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
+  },
+
   tableCard: {
     marginTop: "30px",
     background: "#fff",
@@ -201,7 +275,6 @@ const styles = {
   },
   subtitle: {
     marginBottom: "15px",
-    color: "#333",
   },
   tableWrapper: {
     overflowX: "auto",
@@ -209,30 +282,40 @@ const styles = {
   table: {
     width: "100%",
     borderCollapse: "collapse",
-    minWidth: "700px",
   },
   th: {
-    background: "#f1f5f9",
-    padding: "10px",
+    padding: "12px",
     textAlign: "left",
-    fontSize: "14px",
-    borderBottom: "1px solid #ddd",
+    background: "#1e293b",
+    color: "#fff",
+  },
+  thCenter: {
+    padding: "12px",
+    textAlign: "center",
+    background: "#1e293b",
+    color: "#fff",
   },
   td: {
     padding: "10px",
-    fontSize: "14px",
+    borderBottom: "1px solid #eee",
+  },
+  tdCenter: {
+    padding: "10px",
+    textAlign: "center",
     borderBottom: "1px solid #eee",
   },
   rowEven: {
     background: "#fff",
   },
   rowOdd: {
-    background: "#fafafa",
+    background: "#f9fafb",
+  },
+  avgRow: {
+    background: "#e2e8f0",
   },
   noData: {
     textAlign: "center",
     marginTop: "30px",
-    color: "#777",
   },
 };
 
