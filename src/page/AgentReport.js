@@ -31,7 +31,7 @@ function AgentReport() {
     }
   };
 
-  // ✅ Columns
+  // ✅ Dynamic columns
   const getColumns = () => {
     if (data.length === 0) return [];
 
@@ -57,46 +57,33 @@ function AgentReport() {
     return value;
   };
 
-  // ✅ Calculate averages
-  const getAverages = () => {
-    if (data.length === 0) return {};
+  // ✅ 🔥 CALCULATE AVERAGES ROW
+  const calculateAverages = () => {
+    if (data.length === 0) return null;
 
-    const totals = {};
-    const count = data.length;
+    const avgRow = {
+      agent: "Average",
+      total: Math.round(
+        data.reduce((sum, d) => sum + d.total, 0) / data.length
+      ),
+    };
 
     columns.forEach((col) => {
-      totals[col] = 0;
+      const sum = data.reduce((acc, d) => acc + (d[col] || 0), 0);
+      avgRow[col] = (sum / data.length).toFixed(2);
     });
 
-    data.forEach((agent) => {
-      columns.forEach((col) => {
-        totals[col] += Number(agent[col]) || 0;
-      });
-    });
-
-    const averages = {};
-    columns.forEach((col) => {
-      averages[col] = (totals[col] / count).toFixed(2);
-    });
-
-    return averages;
+    return avgRow;
   };
 
-  const averages = getAverages();
-
-  // ✅ Summary stats
-  const totalAgents = data.length;
-  const totalCalls = data.reduce((sum, a) => sum + (a.total || 0), 0);
-  const avgTalkTime =
-    data.reduce((sum, a) => sum + (a.avgTalkTime || 0), 0) /
-      (data.length || 1);
+  const avgRow = calculateAverages();
 
   return (
     <div style={styles.container}>
-      {/* Upload Card */}
       <div style={styles.card}>
         <h2 style={styles.title}>Agent Performance Report</h2>
 
+        {/* Upload */}
         <div style={styles.uploadGrid}>
           <div style={styles.inputGroup}>
             <label style={styles.label}>CDR File</label>
@@ -124,27 +111,7 @@ function AgentReport() {
         </button>
       </div>
 
-      {/* Summary */}
-      {!loading && data.length > 0 && (
-        <div style={styles.statsRow}>
-          <div style={styles.statCard}>
-            <p>Total Agents</p>
-            <h2>{totalAgents}</h2>
-          </div>
-
-          <div style={styles.statCard}>
-            <p>Total Calls</p>
-            <h2>{totalCalls}</h2>
-          </div>
-
-          <div style={styles.statCard}>
-            <p>Avg Talk Time</p>
-            <h2>{avgTalkTime.toFixed(2)}</h2>
-          </div>
-        </div>
-      )}
-
-      {/* Table */}
+      {/* TABLE */}
       {!loading && data.length > 0 && (
         <div style={styles.tableCard}>
           <h3 style={styles.subtitle}>Agent Summary</h3>
@@ -154,9 +121,9 @@ function AgentReport() {
               <thead>
                 <tr>
                   <th style={styles.th}>Agent</th>
-                  <th style={styles.thCenter}>Total</th>
+                  <th style={styles.th}>Total</th>
                   {columns.map((col) => (
-                    <th key={col} style={styles.thCenter}>
+                    <th key={col} style={styles.th}>
                       {col}
                     </th>
                   ))}
@@ -167,30 +134,34 @@ function AgentReport() {
                 {data.map((agent, index) => (
                   <tr
                     key={index}
-                    style={index % 2 === 0 ? styles.rowEven : styles.rowOdd}
+                    style={
+                      index % 2 === 0 ? styles.rowEven : styles.rowOdd
+                    }
                   >
                     <td style={styles.td}>{agent.agent}</td>
-                    <td style={styles.tdCenter}>{agent.total}</td>
+                    <td style={styles.td}>{agent.total}</td>
 
                     {columns.map((col) => (
-                      <td key={col} style={styles.tdCenter}>
+                      <td key={col} style={styles.td}>
                         {formatValue(col, agent[col])}
                       </td>
                     ))}
                   </tr>
                 ))}
 
-                {/* 🔥 Average Row */}
-                <tr style={styles.avgRow}>
-                  <td style={styles.td}><b>Average</b></td>
-                  <td style={styles.tdCenter}>-</td>
+                {/* 🔥 AVERAGE ROW */}
+                {avgRow && (
+                  <tr style={styles.avgRow}>
+                    <td style={styles.tdBold}>{avgRow.agent}</td>
+                    <td style={styles.tdBold}>{avgRow.total}</td>
 
-                  {columns.map((col) => (
-                    <td key={col} style={styles.tdCenter}>
-                      <b>{averages[col]}</b>
-                    </td>
-                  ))}
-                </tr>
+                    {columns.map((col) => (
+                      <td key={col} style={styles.tdBold}>
+                        {avgRow[col]}
+                      </td>
+                    ))}
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -209,7 +180,7 @@ const styles = {
     minHeight: "100vh",
     background: "#f5f7fa",
     padding: "20px",
-    fontFamily: "Segoe UI, sans-serif",
+    fontFamily: "Arial, sans-serif",
   },
   card: {
     background: "#fff",
@@ -249,32 +220,11 @@ const styles = {
     borderRadius: "6px",
     cursor: "pointer",
   },
-
-  statsRow: {
-    display: "flex",
-    gap: "15px",
-    marginTop: "20px",
-    flexWrap: "wrap",
-  },
-  statCard: {
-    flex: 1,
-    minWidth: "150px",
-    background: "#fff",
-    padding: "15px",
-    borderRadius: "10px",
-    textAlign: "center",
-    boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
-  },
-
   tableCard: {
     marginTop: "30px",
     background: "#fff",
     padding: "20px",
     borderRadius: "12px",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-  },
-  subtitle: {
-    marginBottom: "15px",
   },
   tableWrapper: {
     overflowX: "auto",
@@ -284,34 +234,26 @@ const styles = {
     borderCollapse: "collapse",
   },
   th: {
-    padding: "12px",
+    background: "#f1f5f9",
+    padding: "10px",
     textAlign: "left",
-    background: "#1e293b",
-    color: "#fff",
-  },
-  thCenter: {
-    padding: "12px",
-    textAlign: "center",
-    background: "#1e293b",
-    color: "#fff",
   },
   td: {
     padding: "10px",
-    borderBottom: "1px solid #eee",
   },
-  tdCenter: {
+  tdBold: {
     padding: "10px",
-    textAlign: "center",
-    borderBottom: "1px solid #eee",
+    fontWeight: "700",
   },
   rowEven: {
     background: "#fff",
   },
   rowOdd: {
-    background: "#f9fafb",
+    background: "#fafafa",
   },
   avgRow: {
-    background: "#e2e8f0",
+    background: "#e0f2fe",
+    borderTop: "2px solid #2563eb",
   },
   noData: {
     textAlign: "center",
