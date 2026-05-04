@@ -40,23 +40,50 @@ function Home() {
     }
   };
 
+  // ✅ Force download (no preview)
+  const downloadFile = async (url, name) => {
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = name || "file.csv";
+
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.error("Download failed:", err);
+    }
+  };
+
   return (
     <div style={styles.container}>
       {/* HEADER */}
       <div style={styles.header}>
         <h1 style={styles.title}>Dialer Analytics Dashboard</h1>
-        <button onClick={() => navigate("/agent-report")} style={styles.secondaryBtn}>
+        <button
+          onClick={() => navigate("/agent-report")}
+          style={styles.secondaryBtn}
+        >
           Agent Report
         </button>
       </div>
 
       {/* CARD */}
       <div style={styles.card}>
-        {/* MODE */}
         <div style={styles.row}>
           <div style={styles.field}>
             <label style={styles.label}>Mode</label>
-            <select value={mode} onChange={(e) => setMode(e.target.value)} style={styles.input}>
+            <select
+              value={mode}
+              onChange={(e) => setMode(e.target.value)}
+              style={styles.input}
+            >
               <option value="cdr">CDR Summary</option>
               <option value="timezone">Timezone Split</option>
             </select>
@@ -80,7 +107,6 @@ function Home() {
           )}
         </div>
 
-        {/* FILE */}
         <div style={styles.uploadBox}>
           <input
             type="file"
@@ -90,61 +116,64 @@ function Home() {
           {file && <p style={styles.fileName}>{file.name}</p>}
         </div>
 
-        <button onClick={handleUpload} style={styles.primaryBtn} disabled={loading}>
+        <button
+          onClick={handleUpload}
+          style={styles.primaryBtn}
+          disabled={loading}
+        >
           {loading ? "Processing..." : "Upload & Analyze"}
         </button>
       </div>
 
-      {/* LOADING */}
       {loading && <p style={styles.loading}>Processing file...</p>}
 
       {/* ================= CDR ================= */}
-      {/* ================= CDR ================= */}
-{!loading && mode === "cdr" && result?.report && (
-  <div style={styles.tableCard}>
-    <h3 style={styles.sectionTitle}>📊 CDR Connectivity Report</h3>
+      {!loading && mode === "cdr" && result?.report && (
+        <div style={styles.tableCard}>
+          <h3 style={styles.sectionTitle}>
+            📊 CDR Connectivity Report
+          </h3>
 
-    <div style={styles.tableWrapper}>
-      <table style={styles.table}>
-        <thead>
-          <tr>
-            <th style={styles.th}>Lead ID</th>
-            <th style={styles.th}>Total Calls</th>
-            <th style={styles.th}>Connected Calls</th>
-            <th style={styles.th}>Connectivity</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {result.report.map((item, i) => (
-            <tr
-              key={i}
-              style={i % 2 === 0 ? styles.rowEven : styles.rowOdd}
-            >
-              <td style={styles.td}>{item.leadId}</td>
-              <td style={styles.td}>{item.totalCalls}</td>
-              <td style={styles.td}>{item.connectedCalls}</td>
-              <td
-                style={{
-                  ...styles.td,
-                  fontWeight: "600",
-                  color:
-                    parseFloat(item.connectivity) > 50
-                      ? "green"
-                      : parseFloat(item.connectivity) > 20
-                      ? "#f59e0b"
-                      : "red",
-                }}
-              >
-                {item.connectivity}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  </div>
-)}
+          <div style={styles.tableWrapper}>
+            <table style={styles.table}>
+              <thead>
+                <tr>
+                  <th style={styles.th}>Lead ID</th>
+                  <th style={styles.th}>Total Calls</th>
+                  <th style={styles.th}>Connected Calls</th>
+                  <th style={styles.th}>Connectivity</th>
+                </tr>
+              </thead>
+              <tbody>
+                {result.report.map((item, i) => (
+                  <tr
+                    key={i}
+                    style={i % 2 === 0 ? styles.rowEven : styles.rowOdd}
+                  >
+                    <td style={styles.td}>{item.leadId}</td>
+                    <td style={styles.td}>{item.totalCalls}</td>
+                    <td style={styles.td}>{item.connectedCalls}</td>
+                    <td
+                      style={{
+                        ...styles.td,
+                        fontWeight: "600",
+                        color:
+                          parseFloat(item.connectivity) > 50
+                            ? "green"
+                            : parseFloat(item.connectivity) > 20
+                            ? "#f59e0b"
+                            : "red",
+                      }}
+                    >
+                      {item.connectivity}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* ================= TIMEZONE ================= */}
       {!loading && mode === "timezone" && result?.summary && (
@@ -163,15 +192,13 @@ function Home() {
           <h3 style={{ marginTop: "20px" }}>Downloads</h3>
 
           {result.files?.map((f, i) => (
-            <a
+            <button
               key={i}
-              href={`{f.url}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={styles.downloadLink}
+              onClick={() => downloadFile(f.url, f.fileName)}
+              style={styles.downloadBtn}
             >
               Download {f.zone}
-            </a>
+            </button>
           ))}
         </div>
       )}
@@ -186,33 +213,6 @@ const styles = {
     padding: "30px",
     fontFamily: "Segoe UI, sans-serif",
   },
-  sectionTitle: {
-  marginBottom: "15px",
-  fontWeight: "600",
-  color: "#1e293b",
-},
-
-th: {
-  background: "#f1f5f9",
-  padding: "12px",
-  textAlign: "left",
-  fontSize: "14px",
-  borderBottom: "2px solid #e2e8f0",
-},
-
-td: {
-  padding: "12px",
-  fontSize: "14px",
-  borderBottom: "1px solid #eee",
-},
-
-rowEven: {
-  background: "#ffffff",
-},
-
-rowOdd: {
-  background: "#f9fafb",
-},
   header: {
     display: "flex",
     justifyContent: "space-between",
@@ -239,7 +239,6 @@ rowOdd: {
   label: {
     display: "block",
     marginBottom: "5px",
-    fontSize: "14px",
   },
   input: {
     width: "100%",
@@ -252,7 +251,6 @@ rowOdd: {
   },
   fileName: {
     fontSize: "12px",
-    color: "#555",
   },
   primaryBtn: {
     marginTop: "15px",
@@ -287,6 +285,19 @@ rowOdd: {
     width: "100%",
     borderCollapse: "collapse",
   },
+  th: {
+    background: "#f1f5f9",
+    padding: "12px",
+  },
+  td: {
+    padding: "12px",
+  },
+  rowEven: {
+    background: "#ffffff",
+  },
+  rowOdd: {
+    background: "#f9fafb",
+  },
   zoneGrid: {
     display: "flex",
     gap: "10px",
@@ -299,11 +310,15 @@ rowOdd: {
     minWidth: "100px",
     textAlign: "center",
   },
-  downloadLink: {
+  downloadBtn: {
     display: "block",
     marginTop: "10px",
-    color: "#2563eb",
-    textDecoration: "none",
+    padding: "8px 14px",
+    background: "#2563eb",
+    color: "#fff",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
   },
 };
 
