@@ -165,7 +165,7 @@ function Home() {
           {result.files?.map((f, i) => (
             <a
               key={i}
-              href={`http://98.88.247.111${f.url}`}
+              href={`{f.url}`}
               target="_blank"
               rel="noopener noreferrer"
               style={styles.downloadLink}
