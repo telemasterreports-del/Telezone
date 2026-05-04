@@ -41,24 +41,8 @@ function Home() {
   };
 
   // ✅ Force download (no preview)
-  const downloadFile = async (url, name) => {
-    try {
-      const res = await fetch(url);
-      const blob = await res.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-
-      const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = name || "file.csv";
-
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-
-      window.URL.revokeObjectURL(blobUrl);
-    } catch (err) {
-      console.error("Download failed:", err);
-    }
+  const downloadFile = (url) => {
+    window.open(url, "_self");
   };
 
   return (
@@ -161,8 +145,8 @@ function Home() {
                           parseFloat(item.connectivity) > 50
                             ? "green"
                             : parseFloat(item.connectivity) > 20
-                            ? "#f59e0b"
-                            : "red",
+                              ? "#f59e0b"
+                              : "red",
                       }}
                     >
                       {item.connectivity}
@@ -194,7 +178,7 @@ function Home() {
           {result.files?.map((f, i) => (
             <button
               key={i}
-              onClick={() => downloadFile(f.url, f.fileName)}
+              onClick={() => downloadFile(f.url)}
               style={styles.downloadBtn}
             >
               Download {f.zone}
