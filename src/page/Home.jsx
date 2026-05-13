@@ -40,16 +40,48 @@ function Home() {
     }
   };
 
-  // ✅ Force download (no preview)
   const downloadFile = (url) => {
     window.open(url, "_self");
+  };
+
+  // Dynamic disposition columns
+  const getDispositionColumns = () => {
+    if (!result?.report?.length) return [];
+
+    return Object.keys(result.report[0]).filter(
+      (key) =>
+        ![
+          "leadId",
+          "totalCalls",
+          "connectedCalls",
+          "connectivity",
+        ].includes(key) &&
+        !key.endsWith("Avg")
+    );
+  };
+
+  const dispositionColumns = getDispositionColumns();
+
+  const formatDispositionValue = (item, col) => {
+    const count = item[col] ?? 0;
+    const avg = item[`${col}Avg`] ?? "0.00%";
+
+    return `${count} | ${avg}`;
   };
 
   return (
     <div style={styles.container}>
       {/* HEADER */}
       <div style={styles.header}>
-        <h1 style={styles.title}>Dialer Analytics Dashboard</h1>
+        <div>
+          <h1 style={styles.title}>
+            Dialer Analytics Dashboard
+          </h1>
+          <p style={styles.subTitle}>
+            Upload and analyze dialer CSV reports
+          </p>
+        </div>
+
         <button
           onClick={() => navigate("/agent-report")}
           style={styles.secondaryBtn}
@@ -58,30 +90,41 @@ function Home() {
         </button>
       </div>
 
-      {/* CARD */}
+      {/* UPLOAD CARD */}
       <div style={styles.card}>
         <div style={styles.row}>
           <div style={styles.field}>
             <label style={styles.label}>Mode</label>
+
             <select
               value={mode}
               onChange={(e) => setMode(e.target.value)}
               style={styles.input}
             >
-              <option value="cdr">CDR Summary</option>
-              <option value="timezone">Timezone Split</option>
+              <option value="cdr">
+                CDR Summary
+              </option>
+
+              <option value="timezone">
+                Timezone Split
+              </option>
             </select>
           </div>
 
           {mode === "timezone" && (
             <div style={styles.field}>
-              <label style={styles.label}>Timezone</label>
+              <label style={styles.label}>
+                Timezone
+              </label>
+
               <select
                 value={timezone}
-                onChange={(e) => setTimezone(e.target.value)}
+                onChange={(e) =>
+                  setTimezone(e.target.value)
+                }
                 style={styles.input}
               >
-                <option value="ALL">All</option>
+                <option value="ALL">ALL</option>
                 <option value="EST">EST</option>
                 <option value="CST">CST</option>
                 <option value="MST">MST</option>
@@ -95,9 +138,16 @@ function Home() {
           <input
             type="file"
             accept=".csv"
-            onChange={(e) => setFile(e.target.files[0])}
+            onChange={(e) =>
+              setFile(e.target.files[0])
+            }
           />
-          {file && <p style={styles.fileName}>{file.name}</p>}
+
+          {file && (
+            <p style={styles.fileName}>
+              📄 {file.name}
+            </p>
+          )}
         </div>
 
         <button
@@ -105,87 +155,187 @@ function Home() {
           style={styles.primaryBtn}
           disabled={loading}
         >
-          {loading ? "Processing..." : "Upload & Analyze"}
+          {loading
+            ? "Processing..."
+            : "Upload & Analyze"}
         </button>
       </div>
 
-      {loading && <p style={styles.loading}>Processing file...</p>}
-
-      {/* ================= CDR ================= */}
-      {!loading && mode === "cdr" && result?.report && (
-        <div style={styles.tableCard}>
-          <h3 style={styles.sectionTitle}>
-            📊 CDR Connectivity Report
-          </h3>
-
-          <div style={styles.tableWrapper}>
-            <table style={styles.table}>
-              <thead>
-                <tr>
-                  <th style={styles.th}>Lead ID</th>
-                  <th style={styles.th}>Total Calls</th>
-                  <th style={styles.th}>Connected Calls</th>
-                  <th style={styles.th}>Connectivity</th>
-                </tr>
-              </thead>
-              <tbody>
-                {result.report.map((item, i) => (
-                  <tr
-                    key={i}
-                    style={i % 2 === 0 ? styles.rowEven : styles.rowOdd}
-                  >
-                    <td style={styles.td}>{item.leadId}</td>
-                    <td style={styles.td}>{item.totalCalls}</td>
-                    <td style={styles.td}>{item.connectedCalls}</td>
-                    <td
-                      style={{
-                        ...styles.td,
-                        fontWeight: "600",
-                        color:
-                          parseFloat(item.connectivity) > 50
-                            ? "green"
-                            : parseFloat(item.connectivity) > 20
-                              ? "#f59e0b"
-                              : "red",
-                      }}
-                    >
-                      {item.connectivity}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      {loading && (
+        <div style={styles.loadingCard}>
+          Processing file...
         </div>
       )}
+
+      {/* ===================== CDR REPORT ===================== */}
+      {!loading &&
+        mode === "cdr" &&
+        result?.report && (
+          <div style={styles.tableCard}>
+            <div style={styles.tableHeader}>
+              <h3 style={styles.sectionTitle}>
+                📊 CDR Connectivity Report
+              </h3>
+
+              <span style={styles.badge}>
+                {result.report.length} Leads
+              </span>
+            </div>
+
+            <div style={styles.tableWrapper}>
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={styles.th}>
+                      Lead ID
+                    </th>
+
+                    <th style={styles.th}>
+                      Total Calls
+                    </th>
+
+                    <th style={styles.th}>
+                      Connected
+                    </th>
+
+                    <th style={styles.th}>
+                      Connectivity
+                    </th>
+
+                    {dispositionColumns.map(
+                      (col) => (
+                        <th
+                          key={col}
+                          style={styles.th}
+                        >
+                          {col}
+                        </th>
+                      )
+                    )}
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {result.report.map(
+                    (item, i) => (
+                      <tr
+                        key={i}
+                        style={
+                          i % 2 === 0
+                            ? styles.rowEven
+                            : styles.rowOdd
+                        }
+                      >
+                        <td
+                          style={{
+                            ...styles.td,
+                            fontWeight: "600",
+                          }}
+                        >
+                          {item.leadId}
+                        </td>
+
+                        <td style={styles.td}>
+                          {item.totalCalls}
+                        </td>
+
+                        <td style={styles.td}>
+                          {item.connectedCalls}
+                        </td>
+
+                        <td
+                          style={{
+                            ...styles.td,
+                            fontWeight: "700",
+                            color:
+                              parseFloat(
+                                item.connectivity
+                              ) >= 8
+                                ? "#16a34a"
+                                : parseFloat(
+                                    item.connectivity
+                                  ) >= 5
+                                ? "#d97706"
+                                : "#dc2626",
+                          }}
+                        >
+                          {item.connectivity}
+                        </td>
+
+                        {dispositionColumns.map(
+                          (col) => (
+                            <td
+                              key={col}
+                              style={
+                                styles.td
+                              }
+                            >
+                              {formatDispositionValue(
+                                item,
+                                col
+                              )}
+                            </td>
+                          )
+                        )}
+                      </tr>
+                    )
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
       {/* ================= TIMEZONE ================= */}
-      {!loading && mode === "timezone" && result?.summary && (
-        <div style={styles.tableCard}>
-          <h3>Timezone Summary</h3>
+      {!loading &&
+        mode === "timezone" &&
+        result?.summary && (
+          <div style={styles.tableCard}>
+            <h3 style={styles.sectionTitle}>
+              Timezone Summary
+            </h3>
 
-          <div style={styles.zoneGrid}>
-            {Object.entries(result.summary).map(([zone, count]) => (
-              <div key={zone} style={styles.zoneCard}>
-                <h4>{zone}</h4>
-                <p>{count}</p>
-              </div>
-            ))}
-          </div>
+            <div style={styles.zoneGrid}>
+              {Object.entries(
+                result.summary
+              ).map(([zone, count]) => (
+                <div
+                  key={zone}
+                  style={styles.zoneCard}
+                >
+                  <h4>{zone}</h4>
+                  <p>{count}</p>
+                </div>
+              ))}
+            </div>
 
-          <h3 style={{ marginTop: "20px" }}>Downloads</h3>
-
-          {result.files?.map((f, i) => (
-            <button
-              key={i}
-              onClick={() => downloadFile(f.url)}
-              style={styles.downloadBtn}
+            <h3
+              style={{
+                marginTop: "30px",
+              }}
             >
-              Download {f.zone}
-            </button>
-          ))}
-        </div>
-      )}
+              Downloads
+            </h3>
+
+            {result.files?.map(
+              (f, i) => (
+                <button
+                  key={i}
+                  onClick={() =>
+                    downloadFile(
+                      f.url
+                    )
+                  }
+                  style={
+                    styles.downloadBtn
+                  }
+                >
+                  Download {f.zone}
+                </button>
+              )
+            )}
+          </div>
+        )}
     </div>
   );
 }
@@ -193,115 +343,185 @@ function Home() {
 const styles = {
   container: {
     minHeight: "100vh",
-    background: "#f4f6f9",
-    padding: "30px",
-    fontFamily: "Segoe UI, sans-serif",
+    background: "#f3f6fb",
+    padding: "32px",
+    fontFamily: "Inter, sans-serif",
   },
+
   header: {
     display: "flex",
     justifyContent: "space-between",
-    marginBottom: "20px",
+    alignItems: "center",
+    marginBottom: "24px",
   },
+
   title: {
-    fontWeight: "600",
+    margin: 0,
+    fontSize: "30px",
+    fontWeight: "700",
+    color: "#111827",
   },
+
+  subTitle: {
+    color: "#6b7280",
+    marginTop: "6px",
+  },
+
   card: {
     background: "#fff",
-    padding: "20px",
-    borderRadius: "10px",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+    padding: "28px",
+    borderRadius: "20px",
+    boxShadow:
+      "0 10px 30px rgba(0,0,0,0.08)",
+    marginBottom: "24px",
   },
+
   row: {
     display: "flex",
     gap: "20px",
     flexWrap: "wrap",
   },
+
   field: {
     flex: 1,
-    minWidth: "200px",
+    minWidth: "240px",
   },
+
   label: {
     display: "block",
-    marginBottom: "5px",
+    marginBottom: "8px",
+    fontWeight: "600",
+    color: "#374151",
   },
+
   input: {
     width: "100%",
-    padding: "8px",
-    borderRadius: "6px",
-    border: "1px solid #ccc",
+    padding: "12px",
+    borderRadius: "12px",
+    border: "1px solid #d1d5db",
+    fontSize: "14px",
   },
+
   uploadBox: {
-    marginTop: "15px",
+    marginTop: "20px",
   },
+
   fileName: {
-    fontSize: "12px",
+    color: "#2563eb",
+    marginTop: "10px",
+    fontSize: "14px",
   },
+
   primaryBtn: {
-    marginTop: "15px",
-    padding: "10px 20px",
+    marginTop: "20px",
     background: "#2563eb",
     color: "#fff",
     border: "none",
-    borderRadius: "6px",
+    padding: "12px 24px",
+    borderRadius: "12px",
     cursor: "pointer",
+    fontWeight: "600",
   },
+
   secondaryBtn: {
-    padding: "8px 16px",
-    background: "#e2e8f0",
-    border: "none",
-    borderRadius: "6px",
+    background: "#fff",
+    border: "1px solid #d1d5db",
+    padding: "10px 18px",
+    borderRadius: "12px",
     cursor: "pointer",
+    fontWeight: "600",
   },
-  loading: {
-    marginTop: "20px",
-  },
-  tableCard: {
-    marginTop: "25px",
+
+  loadingCard: {
     background: "#fff",
     padding: "20px",
-    borderRadius: "10px",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+    borderRadius: "16px",
+    textAlign: "center",
   },
+
+  tableCard: {
+    background: "#fff",
+    borderRadius: "20px",
+    padding: "24px",
+    boxShadow:
+      "0 10px 30px rgba(0,0,0,0.08)",
+  },
+
+  tableHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    marginBottom: "20px",
+  },
+
+  sectionTitle: {
+    margin: 0,
+  },
+
+  badge: {
+    background: "#dbeafe",
+    color: "#1d4ed8",
+    padding: "8px 14px",
+    borderRadius: "999px",
+    fontWeight: "600",
+  },
+
   tableWrapper: {
     overflowX: "auto",
   },
+
   table: {
     width: "100%",
-    borderCollapse: "collapse",
+    borderCollapse: "separate",
+    borderSpacing: 0,
   },
+
   th: {
-    background: "#f1f5f9",
-    padding: "12px",
+    position: "sticky",
+    top: 0,
+    background: "#eff6ff",
+    padding: "16px",
+    textAlign: "left",
+    fontWeight: "700",
+    borderBottom: "1px solid #dbeafe",
+    whiteSpace: "nowrap",
   },
+
   td: {
-    padding: "12px",
+    padding: "16px",
+    borderBottom: "1px solid #f1f5f9",
+    whiteSpace: "nowrap",
   },
+
   rowEven: {
-    background: "#ffffff",
+    background: "#fff",
   },
+
   rowOdd: {
     background: "#f9fafb",
   },
+
   zoneGrid: {
     display: "flex",
-    gap: "10px",
+    gap: "20px",
     flexWrap: "wrap",
   },
+
   zoneCard: {
-    background: "#f1f5f9",
-    padding: "15px",
-    borderRadius: "8px",
-    minWidth: "100px",
+    background: "#eff6ff",
+    padding: "24px",
+    borderRadius: "16px",
+    minWidth: "150px",
     textAlign: "center",
   },
+
   downloadBtn: {
     display: "block",
-    marginTop: "10px",
-    padding: "8px 14px",
+    marginTop: "12px",
     background: "#2563eb",
     color: "#fff",
     border: "none",
-    borderRadius: "6px",
+    padding: "12px 18px",
+    borderRadius: "12px",
     cursor: "pointer",
   },
 };
