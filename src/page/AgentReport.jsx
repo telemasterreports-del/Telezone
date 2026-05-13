@@ -2,18 +2,10 @@ import React, { useState } from "react";
 import axios from "axios";
 
 function AgentReport() {
-  const [cdrFile, setCdrFile] =
-    useState(null);
-
-  const [agentFile, setAgentFile] =
-    useState(null);
-
-  const [data, setData] = useState(
-    []
-  );
-
-  const [loading, setLoading] =
-    useState(false);
+  const [cdrFile, setCdrFile] = useState(null);
+  const [agentFile, setAgentFile] = useState(null);
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const handleUpload = async () => {
     if (!cdrFile || !agentFile) {
@@ -22,8 +14,7 @@ function AgentReport() {
       );
     }
 
-    const formData =
-      new FormData();
+    const formData = new FormData();
 
     formData.append(
       "cdrFile",
@@ -38,11 +29,10 @@ function AgentReport() {
     try {
       setLoading(true);
 
-      const res =
-        await axios.post(
-          "/api/agent-report",
-          formData
-        );
+      const res = await axios.post(
+        "/api/agent-report",
+        formData
+      );
 
       const sorted =
         res.data.agents.sort(
@@ -83,7 +73,7 @@ function AgentReport() {
 
   const columns = getColumns();
 
-  // Format cell
+  // Format cell value
   const formatValue = (
     col,
     row
@@ -100,6 +90,7 @@ function AgentReport() {
     const percentageKey =
       `${col}Percentage`;
 
+    // Show: count | percentage
     if (
       row[
         percentageKey
@@ -135,8 +126,9 @@ function AgentReport() {
               d
             ) =>
               sum +
-              (d.total ||
-                0),
+              Number(
+                d.total || 0
+              ),
             0
           ) / data.length
         ).toFixed(2);
@@ -151,19 +143,17 @@ function AgentReport() {
               ) =>
                 acc +
                 Number(
-                  d[col] ||
-                    0
+                  d[col] || 0
                 ),
               0
-            ) /
-            data.length;
+            ) / data.length;
 
           avgRow[col] =
             avgValue.toFixed(
               2
             );
 
-          // percentage based on avg total
+          // % based on avg total
           avgRow[
             `${col}Percentage`
           ] =
@@ -199,8 +189,7 @@ function AgentReport() {
             ) =>
               sum +
               Number(
-                d.total ||
-                  0
+                d.total || 0
               ),
             0
           ),
@@ -216,8 +205,7 @@ function AgentReport() {
               ) =>
                 sum +
                 Number(
-                  d[col] ||
-                    0
+                  d[col] || 0
                 ),
               0
             );
@@ -233,15 +221,17 @@ function AgentReport() {
   const totalRow =
     calculateTotals();
 
+  // Header labels
   const formatHeader = (
     col
-  ) =>
-    col
+  ) => {
+    return col
       .replace(
         /([A-Z])/g,
         " $1"
       )
       .trim();
+  };
 
   return (
     <div
@@ -262,6 +252,7 @@ function AgentReport() {
           Report
         </h2>
 
+        {/* Upload */}
         <div
           style={
             styles.uploadGrid
@@ -345,6 +336,7 @@ function AgentReport() {
         </button>
       </div>
 
+      {/* TABLE */}
       {!loading &&
         data.length >
           0 && (
@@ -358,8 +350,7 @@ function AgentReport() {
                 styles.subtitle
               }
             >
-              Agent
-              Summary
+              Agent Summary
             </h3>
 
             <div
@@ -571,16 +562,140 @@ function AgentReport() {
             </div>
           </div>
         )}
+
+      {!loading &&
+        data.length ===
+          0 && (
+          <p
+            style={
+              styles.noData
+            }
+          >
+            No data available
+          </p>
+        )}
     </div>
   );
 }
 
 const styles = {
+  container: {
+    minHeight: "100vh",
+    background: "#f5f7fa",
+    padding: "20px",
+    fontFamily:
+      "Arial, sans-serif",
+  },
+
+  card: {
+    background: "#fff",
+    padding: "25px",
+    borderRadius: "12px",
+    boxShadow:
+      "0 4px 12px rgba(0,0,0,0.08)",
+    maxWidth: "900px",
+    margin: "0 auto",
+  },
+
+  title: {
+    marginBottom: "20px",
+    fontWeight: "600",
+  },
+
+  subtitle: {
+    marginBottom: "15px",
+    fontWeight: "600",
+  },
+
+  uploadGrid: {
+    display: "flex",
+    gap: "20px",
+    flexWrap: "wrap",
+  },
+
+  inputGroup: {
+    flex: 1,
+    minWidth: "250px",
+  },
+
+  label: {
+    marginBottom: "6px",
+    display: "block",
+  },
+
+  input: {
+    width: "100%",
+    padding: "8px",
+  },
+
+  button: {
+    marginTop: "20px",
+    padding: "10px 20px",
+    background: "#2563eb",
+    color: "#fff",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+  },
+
+  tableCard: {
+    marginTop: "30px",
+    background: "#fff",
+    padding: "20px",
+    borderRadius: "12px",
+  },
+
+  tableWrapper: {
+    overflowX: "auto",
+  },
+
+  table: {
+    width: "100%",
+    borderCollapse:
+      "collapse",
+  },
+
+  th: {
+    background: "#f1f5f9",
+    padding: "10px",
+    textAlign: "left",
+    whiteSpace: "nowrap",
+  },
+
+  td: {
+    padding: "10px",
+    whiteSpace: "nowrap",
+  },
+
+  tdBold: {
+    padding: "10px",
+    fontWeight: "700",
+    whiteSpace: "nowrap",
+  },
+
+  rowEven: {
+    background: "#fff",
+  },
+
+  rowOdd: {
+    background: "#fafafa",
+  },
+
+  avgRow: {
+    background: "#e0f2fe",
+    borderTop:
+      "2px solid #2563eb",
+  },
+
   totalRow: {
-    background:
-      "#dcfce7",
+    background: "#dcfce7",
     borderTop:
       "2px solid #16a34a",
+  },
+
+  noData: {
+    textAlign: "center",
+    marginTop: "30px",
   },
 };
 
