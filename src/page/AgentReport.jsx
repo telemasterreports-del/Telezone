@@ -2,33 +2,61 @@ import React, { useState } from "react";
 import axios from "axios";
 
 function AgentReport() {
-  const [cdrFile, setCdrFile] = useState(null);
-  const [agentFile, setAgentFile] = useState(null);
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [cdrFile, setCdrFile] =
+    useState(null);
+
+  const [agentFile, setAgentFile] =
+    useState(null);
+
+  const [data, setData] = useState(
+    []
+  );
+
+  const [overall, setOverall] =
+    useState(null);
+
+  const [loading, setLoading] =
+    useState(false);
 
   const handleUpload = async () => {
     if (!cdrFile || !agentFile) {
-      return alert("Upload both CDR and Agent files");
+      return alert(
+        "Upload both CDR and Agent files"
+      );
     }
 
-    const formData = new FormData();
-    formData.append("cdrFile", cdrFile);
-    formData.append("agentFile", agentFile);
+    const formData =
+      new FormData();
+
+    formData.append(
+      "cdrFile",
+      cdrFile
+    );
+
+    formData.append(
+      "agentFile",
+      agentFile
+    );
 
     try {
       setLoading(true);
 
-      const res = await axios.post(
-        "/api/agent-report",
-        formData
-      );
+      const res =
+        await axios.post(
+          "/api/agent-report",
+          formData
+        );
 
-      const sorted = res.data.sort(
-        (a, b) => b.total - a.total
-      );
+      const sorted =
+        res.data.agents.sort(
+          (a, b) =>
+            b.total - a.total
+        );
 
       setData(sorted);
+      setOverall(
+        res.data.overall
+      );
     } catch (err) {
       console.error(err);
       alert("Upload failed");
@@ -39,161 +67,238 @@ function AgentReport() {
 
   // Dynamic columns
   const getColumns = () => {
-    if (data.length === 0) return [];
+    if (data.length === 0)
+      return [];
 
-    return Object.keys(data[0]).filter(
+    return Object.keys(
+      data[0]
+    ).filter(
       (key) =>
         key !== "agent" &&
         key !== "total" &&
-        key !== "talkTimeTotal" &&
+        key !==
+          "talkTimeTotal" &&
         key !== "callCount" &&
-        !key.includes("Percentage") // remove separate % columns
+        !key.includes(
+          "Percentage"
+        )
     );
   };
 
   const columns = getColumns();
 
   // Format values
-  const formatValue = (col, row) => {
+  const formatValue = (
+    col,
+    row
+  ) => {
     const value = row[col];
 
     if (
       value === undefined ||
       value === null
-    )
+    ) {
       return "-";
-
-    // avg talk time
-    if (col === "avgTalkTime") {
-      return Number(value).toFixed(2);
     }
 
-    // combine value + percentage
-    const percentageKey = `${col}Percentage`;
-
+    // avg talk time
     if (
-      row[percentageKey] !== undefined &&
-      row[percentageKey] !== null
+      col === "avgTalkTime"
+    ) {
+      return Number(
+        value
+      ).toFixed(2);
+    }
+
+    const percentageKey =
+      `${col}Percentage`;
+
+    // show %
+    if (
+      row[
+        percentageKey
+      ] !== undefined &&
+      row[
+        percentageKey
+      ] !== null
     ) {
       return `${value} | ${Number(
-        row[percentageKey]
+        row[
+          percentageKey
+        ]
       ).toFixed(2)}%`;
     }
 
     return value;
   };
 
-  // Calculate averages row
-  const calculateAverages = () => {
-    if (data.length === 0) return null;
+  // Average row
+  const calculateAverages =
+    () => {
+      if (
+        data.length === 0
+      )
+        return null;
 
-    const avgRow = {
-      agent: "Average",
-      total: Math.round(
-        data.reduce(
-          (sum, d) => sum + (d.total || 0),
-          0
-        ) / data.length
-      ),
-    };
+      const avgRow = {
+        agent: "Average",
+        total: Math.round(
+          data.reduce(
+            (
+              sum,
+              d
+            ) =>
+              sum +
+              (d.total ||
+                0),
+            0
+          ) / data.length
+        ),
+      };
 
-    columns.forEach((col) => {
-      const sum = data.reduce(
-        (acc, d) =>
-          acc + Number(d[col] || 0),
-        0
+      columns.forEach(
+        (col) => {
+          const sum =
+            data.reduce(
+              (
+                acc,
+                d
+              ) =>
+                acc +
+                Number(
+                  d[col] ||
+                    0
+                ),
+              0
+            );
+
+          avgRow[col] =
+            Number(
+              sum /
+                data.length
+            ).toFixed(
+              2
+            );
+
+          // ❌ DO NOT average %
+          avgRow[
+            `${col}Percentage`
+          ] = null;
+        }
       );
 
-      avgRow[col] = Number(
-        sum / data.length
-      ).toFixed(2);
+      return avgRow;
+    };
 
-      // average percentages too
-      const percentageKey = `${col}Percentage`;
-
-      if (
-        data.some(
-          (d) =>
-            d[percentageKey] !==
-            undefined
-        )
-      ) {
-        const percentageSum =
-          data.reduce(
-            (acc, d) =>
-              acc +
-              Number(
-                d[percentageKey] || 0
-              ),
-            0
-          );
-
-        avgRow[percentageKey] =
-          percentageSum /
-          data.length;
-      }
-    });
-
-    return avgRow;
-  };
-
-  const avgRow = calculateAverages();
+  const avgRow =
+    calculateAverages();
 
   // Better header labels
-  const formatHeader = (col) => {
+  const formatHeader = (
+    col
+  ) => {
     return col
-      .replace(/([A-Z])/g, " $1")
+      .replace(
+        /([A-Z])/g,
+        " $1"
+      )
       .trim();
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h2 style={styles.title}>
-          Agent Performance Report
+    <div
+      style={
+        styles.container
+      }
+    >
+      <div
+        style={styles.card}
+      >
+        <h2
+          style={
+            styles.title
+          }
+        >
+          Agent Performance
+          Report
         </h2>
 
-        {/* Upload */}
-        <div style={styles.uploadGrid}>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>
+        <div
+          style={
+            styles.uploadGrid
+          }
+        >
+          <div
+            style={
+              styles.inputGroup
+            }
+          >
+            <label
+              style={
+                styles.label
+              }
+            >
               CDR File
             </label>
 
             <input
               type="file"
               accept=".csv"
-              onChange={(e) =>
+              onChange={(
+                e
+              ) =>
                 setCdrFile(
-                  e.target.files[0]
+                  e.target
+                    .files[0]
                 )
               }
-              style={styles.input}
+              style={
+                styles.input
+              }
             />
           </div>
 
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>
+          <div
+            style={
+              styles.inputGroup
+            }
+          >
+            <label
+              style={
+                styles.label
+              }
+            >
               Agent File
             </label>
 
             <input
               type="file"
               accept=".csv"
-              onChange={(e) =>
+              onChange={(
+                e
+              ) =>
                 setAgentFile(
-                  e.target.files[0]
+                  e.target
+                    .files[0]
                 )
               }
-              style={styles.input}
+              style={
+                styles.input
+              }
             />
           </div>
         </div>
 
         <button
-          onClick={handleUpload}
-          style={styles.button}
-          disabled={loading}
+          onClick={
+            handleUpload
+          }
+          style={
+            styles.button
+          }
+          disabled={
+            loading
+          }
         >
           {loading
             ? "Processing..."
@@ -201,48 +306,85 @@ function AgentReport() {
         </button>
       </div>
 
-      {/* TABLE */}
       {!loading &&
-        data.length > 0 && (
-          <div style={styles.tableCard}>
-            <h3 style={styles.subtitle}>
-              Agent Summary
+        data.length >
+          0 && (
+          <div
+            style={
+              styles.tableCard
+            }
+          >
+            <h3
+              style={
+                styles.subtitle
+              }
+            >
+              Agent
+              Summary
             </h3>
 
             <div
-              style={styles.tableWrapper}
+              style={
+                styles.tableWrapper
+              }
             >
-              <table style={styles.table}>
+              <table
+                style={
+                  styles.table
+                }
+              >
                 <thead>
                   <tr>
-                    <th style={styles.th}>
+                    <th
+                      style={
+                        styles.th
+                      }
+                    >
                       Agent
                     </th>
 
-                    <th style={styles.th}>
+                    <th
+                      style={
+                        styles.th
+                      }
+                    >
                       Total
                     </th>
 
-                    {columns.map((col) => (
-                      <th
-                        key={col}
-                        style={styles.th}
-                      >
-                        {formatHeader(
-                          col
-                        )}
-                      </th>
-                    ))}
+                    {columns.map(
+                      (
+                        col
+                      ) => (
+                        <th
+                          key={
+                            col
+                          }
+                          style={
+                            styles.th
+                          }
+                        >
+                          {formatHeader(
+                            col
+                          )}
+                        </th>
+                      )
+                    )}
                   </tr>
                 </thead>
 
                 <tbody>
                   {data.map(
-                    (agent, index) => (
+                    (
+                      agent,
+                      index
+                    ) => (
                       <tr
-                        key={index}
+                        key={
+                          index
+                        }
                         style={
-                          index % 2 ===
+                          index %
+                            2 ===
                           0
                             ? styles.rowEven
                             : styles.rowOdd
@@ -269,9 +411,13 @@ function AgentReport() {
                         </td>
 
                         {columns.map(
-                          (col) => (
+                          (
+                            col
+                          ) => (
                             <td
-                              key={col}
+                              key={
+                                col
+                              }
                               style={
                                 styles.td
                               }
@@ -287,7 +433,7 @@ function AgentReport() {
                     )
                   )}
 
-                  {/* Average Row */}
+                  {/* Average */}
                   {avgRow && (
                     <tr
                       style={
@@ -299,9 +445,7 @@ function AgentReport() {
                           styles.tdBold
                         }
                       >
-                        {
-                          avgRow.agent
-                        }
+                        Average
                       </td>
 
                       <td
@@ -315,16 +459,68 @@ function AgentReport() {
                       </td>
 
                       {columns.map(
-                        (col) => (
+                        (
+                          col
+                        ) => (
                           <td
-                            key={col}
+                            key={
+                              col
+                            }
+                            style={
+                              styles.tdBold
+                            }
+                          >
+                            {
+                              avgRow[
+                                col
+                              ]
+                            }
+                          </td>
+                        )
+                      )}
+                    </tr>
+                  )}
+
+                  {/* Overall */}
+                  {overall && (
+                    <tr
+                      style={
+                        styles.overallRow
+                      }
+                    >
+                      <td
+                        style={
+                          styles.tdBold
+                        }
+                      >
+                        Overall
+                      </td>
+
+                      <td
+                        style={
+                          styles.tdBold
+                        }
+                      >
+                        {
+                          overall.overallTotalCalls
+                        }
+                      </td>
+
+                      {columns.map(
+                        (
+                          col
+                        ) => (
+                          <td
+                            key={
+                              col
+                            }
                             style={
                               styles.tdBold
                             }
                           >
                             {formatValue(
                               col,
-                              avgRow
+                              overall
                             )}
                           </td>
                         )
@@ -338,9 +534,15 @@ function AgentReport() {
         )}
 
       {!loading &&
-        data.length === 0 && (
-          <p style={styles.noData}>
-            No data available
+        data.length ===
+          0 && (
+          <p
+            style={
+              styles.noData
+            }
+          >
+            No data
+            available
           </p>
         )}
     </div>
@@ -350,7 +552,8 @@ function AgentReport() {
 const styles = {
   container: {
     minHeight: "100vh",
-    background: "#f5f7fa",
+    background:
+      "#f5f7fa",
     padding: "20px",
     fontFamily:
       "Arial, sans-serif",
@@ -359,7 +562,8 @@ const styles = {
   card: {
     background: "#fff",
     padding: "25px",
-    borderRadius: "12px",
+    borderRadius:
+      "12px",
     boxShadow:
       "0 4px 12px rgba(0,0,0,0.08)",
     maxWidth: "900px",
@@ -367,30 +571,34 @@ const styles = {
   },
 
   title: {
-    marginBottom: "20px",
+    marginBottom:
+      "20px",
     fontWeight: "600",
   },
 
   subtitle: {
-    marginBottom: "15px",
+    marginBottom:
+      "15px",
     fontWeight: "600",
   },
 
   uploadGrid: {
     display: "flex",
     gap: "20px",
-    flexWrap: "wrap",
+    flexWrap:
+      "wrap",
   },
 
   inputGroup: {
     flex: 1,
-    minWidth: "250px",
+    minWidth:
+      "250px",
   },
 
   label: {
-    marginBottom: "6px",
+    marginBottom:
+      "6px",
     display: "block",
-    fontWeight: "500",
   },
 
   input: {
@@ -399,71 +607,97 @@ const styles = {
   },
 
   button: {
-    marginTop: "20px",
-    padding: "10px 20px",
-    background: "#2563eb",
+    marginTop:
+      "20px",
+    padding:
+      "10px 20px",
+    background:
+      "#2563eb",
     color: "#fff",
     border: "none",
-    borderRadius: "6px",
+    borderRadius:
+      "6px",
     cursor: "pointer",
   },
 
   tableCard: {
-    marginTop: "30px",
-    background: "#fff",
+    marginTop:
+      "30px",
+    background:
+      "#fff",
     padding: "20px",
-    borderRadius: "12px",
-    boxShadow:
-      "0 4px 12px rgba(0,0,0,0.08)",
+    borderRadius:
+      "12px",
   },
 
   tableWrapper: {
-    overflowX: "auto",
+    overflowX:
+      "auto",
   },
 
   table: {
     width: "100%",
-    borderCollapse: "collapse",
+    borderCollapse:
+      "collapse",
   },
 
   th: {
-    background: "#f1f5f9",
+    background:
+      "#f1f5f9",
     padding: "12px",
-    textAlign: "left",
-    whiteSpace: "nowrap",
-    fontWeight: "600",
+    textAlign:
+      "left",
+    whiteSpace:
+      "nowrap",
   },
 
   td: {
-    padding: "10px 12px",
-    whiteSpace: "nowrap",
+    padding:
+      "10px 12px",
+    whiteSpace:
+      "nowrap",
     borderBottom:
       "1px solid #e5e7eb",
   },
 
   tdBold: {
-    padding: "10px 12px",
-    fontWeight: "700",
-    whiteSpace: "nowrap",
+    padding:
+      "10px 12px",
+    fontWeight:
+      "700",
+    whiteSpace:
+      "nowrap",
   },
 
   rowEven: {
-    background: "#fff",
+    background:
+      "#fff",
   },
 
   rowOdd: {
-    background: "#fafafa",
+    background:
+      "#fafafa",
   },
 
   avgRow: {
-    background: "#e0f2fe",
+    background:
+      "#e0f2fe",
     borderTop:
       "2px solid #2563eb",
   },
 
+  overallRow: {
+    background:
+      "#dcfce7",
+    borderTop:
+      "2px solid #16a34a",
+  },
+
   noData: {
-    textAlign: "center",
-    marginTop: "30px",
+    textAlign:
+      "center",
+    marginTop:
+      "30px",
     color: "#6b7280",
   },
 };
