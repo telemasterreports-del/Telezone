@@ -8,7 +8,8 @@ function AgentReport() {
   const [agentFile, setAgentFile] =
     useState(null);
 
-  const [data, setData] = useState([]);
+  const [data, setData] =
+    useState([]);
 
   const [loading, setLoading] =
     useState(false);
@@ -42,12 +43,24 @@ function AgentReport() {
           formData
         );
 
-      const sorted = (
-        res.data?.agents || []
-      ).sort(
-        (a, b) =>
-          b.total - a.total
+      console.log(
+        "API Response:",
+        res.data
       );
+
+      const responseData =
+        Array.isArray(
+          res.data
+        )
+          ? res.data
+          : res.data?.agents ||
+            [];
+
+      const sorted =
+        responseData.sort(
+          (a, b) =>
+            b.total - a.total
+        );
 
       setData(sorted);
     } catch (err) {
@@ -58,9 +71,10 @@ function AgentReport() {
     }
   };
 
-  // Only disposition columns
+  // Get only disposition columns
   const getColumns = () => {
-    if (!data.length) return [];
+    if (!data.length)
+      return [];
 
     return Object.keys(
       data[0]
@@ -79,9 +93,10 @@ function AgentReport() {
     );
   };
 
-  const columns = getColumns();
+  const columns =
+    getColumns();
 
-  // Cell formatting
+  // Format cell
   const formatValue = (
     col,
     row
@@ -97,17 +112,17 @@ function AgentReport() {
         percentageKey
       ] !== undefined
     ) {
-      return `${value} | ${Number(
+      return `${value} (${Number(
         row[
           percentageKey
         ]
-      ).toFixed(2)}%`;
+      ).toFixed(2)}%)`;
     }
 
     return value;
   };
 
-  // Average Row
+  // Average row
   const calculateAverages =
     () => {
       if (!data.length)
@@ -150,7 +165,9 @@ function AgentReport() {
             ) / data.length;
 
           avgRow[col] =
-            avg.toFixed(2);
+            avg.toFixed(
+              2
+            );
 
           avgRow[
             `${col}Percentage`
@@ -168,7 +185,7 @@ function AgentReport() {
       return avgRow;
     };
 
-  // Total Row
+  // Total row
   const calculateTotals =
     () => {
       if (!data.length)
@@ -413,7 +430,7 @@ function AgentReport() {
                       >
                         <td
                           style={
-                            styles.td
+                            styles.tdAgent
                           }
                         >
                           {
@@ -556,16 +573,151 @@ function AgentReport() {
 }
 
 const styles = {
-  ...yourExistingStyles,
+  container: {
+    minHeight: "100vh",
+    background:
+      "#f4f7fb",
+    padding: "30px",
+    fontFamily:
+      "Inter, sans-serif",
+  },
+
+  card: {
+    background:
+      "#ffffff",
+    padding: "28px",
+    borderRadius:
+      "16px",
+    boxShadow:
+      "0 4px 20px rgba(0,0,0,0.08)",
+    maxWidth: "1000px",
+    margin:
+      "0 auto 30px",
+  },
+
+  title: {
+    fontSize: "28px",
+    fontWeight: "700",
+    marginBottom: "24px",
+  },
+
   subtitle: {
-    marginBottom: "15px",
+    fontSize: "20px",
+    fontWeight: "600",
+    marginBottom: "20px",
+  },
+
+  uploadGrid: {
+    display: "flex",
+    gap: "20px",
+    flexWrap: "wrap",
+  },
+
+  inputGroup: {
+    flex: 1,
+    minWidth: "280px",
+  },
+
+  label: {
+    display: "block",
+    marginBottom: "8px",
+    fontWeight: "500",
+  },
+
+  input: {
+    width: "100%",
+    padding: "10px",
+    border:
+      "1px solid #d1d5db",
+    borderRadius:
+      "8px",
+  },
+
+  button: {
+    marginTop: "20px",
+    padding:
+      "12px 24px",
+    background:
+      "#2563eb",
+    color: "#fff",
+    border: "none",
+    borderRadius:
+      "8px",
+    cursor: "pointer",
     fontWeight: "600",
   },
+
+  tableCard: {
+    background:
+      "#ffffff",
+    borderRadius:
+      "16px",
+    padding: "24px",
+    boxShadow:
+      "0 4px 20px rgba(0,0,0,0.08)",
+  },
+
+  tableWrapper: {
+    overflowX: "auto",
+    borderRadius:
+      "12px",
+  },
+
+  table: {
+    width: "100%",
+    borderCollapse:
+      "collapse",
+  },
+
+  th: {
+    background:
+      "#1e293b",
+    color: "#fff",
+    padding: "14px",
+    textAlign: "left",
+    whiteSpace:
+      "nowrap",
+    position:
+      "sticky",
+    top: 0,
+  },
+
+  td: {
+    padding: "14px",
+    borderBottom:
+      "1px solid #e5e7eb",
+    whiteSpace:
+      "nowrap",
+  },
+
+  tdAgent: {
+    padding: "14px",
+    fontWeight: "600",
+  },
+
+  tdBold: {
+    padding: "14px",
+    fontWeight: "700",
+  },
+
+  rowEven: {
+    background:
+      "#ffffff",
+  },
+
+  rowOdd: {
+    background:
+      "#f8fafc",
+  },
+
+  avgRow: {
+    background:
+      "#dbeafe",
+  },
+
   totalRow: {
     background:
       "#dcfce7",
-    borderTop:
-      "2px solid #16a34a",
   },
 };
 
