@@ -77,9 +77,6 @@ function Home() {
           <h1 style={styles.title}>
             Dialer Analytics Dashboard
           </h1>
-          <p style={styles.subTitle}>
-            Upload and analyze dialer CSV reports
-          </p>
         </div>
 
         <button
@@ -145,7 +142,7 @@ function Home() {
 
           {file && (
             <p style={styles.fileName}>
-              📄 {file.name}
+               {file.name}
             </p>
           )}
         </div>
