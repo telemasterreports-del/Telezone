@@ -14,7 +14,8 @@ function AgentReport() {
       );
     }
 
-    const formData = new FormData();
+    const formData =
+      new FormData();
 
     formData.append(
       "cdrFile",
@@ -29,21 +30,25 @@ function AgentReport() {
     try {
       setLoading(true);
 
-      const res = await axios.post(
-        "/api/agent-report",
-        formData
-      );
-
-      const sorted =
-        res.data.agents.sort(
-          (a, b) =>
-            b.total - a.total
+      const res =
+        await axios.post(
+          "/api/agent-report",
+          formData
         );
+
+      const sorted = (
+        res.data?.agents || []
+      ).sort(
+        (a, b) =>
+          b.total - a.total
+      );
 
       setData(sorted);
     } catch (err) {
       console.error(err);
-      alert("Upload failed");
+      alert(
+        "Upload failed"
+      );
     } finally {
       setLoading(false);
     }
@@ -61,10 +66,10 @@ function AgentReport() {
         key !== "agent" &&
         key !== "total" &&
         key !==
-          "talkTimeTotal" &&
+        "talkTimeTotal" &&
         key !== "callCount" &&
         key !==
-          "avgTalkTime" &&
+        "avgTalkTime" &&
         !key.includes(
           "Percentage"
         )
@@ -93,12 +98,12 @@ function AgentReport() {
     // Show: count | percentage
     if (
       row[
-        percentageKey
+      percentageKey
       ] !== undefined
     ) {
       return `${value} | ${Number(
         row[
-          percentageKey
+        percentageKey
         ]
       ).toFixed(2)}%`;
     }
@@ -158,12 +163,12 @@ function AgentReport() {
             `${col}Percentage`
           ] =
             avgRow.total >
-            0
+              0
               ? (
-                  (avgValue /
-                    avgRow.total) *
-                  100
-                ).toFixed(2)
+                (avgValue /
+                  avgRow.total) *
+                100
+              ).toFixed(2)
               : 0;
         }
       );
@@ -339,7 +344,7 @@ function AgentReport() {
       {/* TABLE */}
       {!loading &&
         data.length >
-          0 && (
+        0 && (
           <div
             style={
               styles.tableCard
@@ -415,7 +420,7 @@ function AgentReport() {
                         style={
                           index %
                             2 ===
-                          0
+                            0
                             ? styles.rowEven
                             : styles.rowOdd
                         }
@@ -549,7 +554,7 @@ function AgentReport() {
                           >
                             {
                               totalRow[
-                                col
+                              col
                               ]
                             }
                           </td>
@@ -565,7 +570,7 @@ function AgentReport() {
 
       {!loading &&
         data.length ===
-          0 && (
+        0 && (
           <p
             style={
               styles.noData
