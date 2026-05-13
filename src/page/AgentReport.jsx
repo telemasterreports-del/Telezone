@@ -2,10 +2,16 @@ import React, { useState } from "react";
 import axios from "axios";
 
 function AgentReport() {
-  const [cdrFile, setCdrFile] = useState(null);
-  const [agentFile, setAgentFile] = useState(null);
+  const [cdrFile, setCdrFile] =
+    useState(null);
+
+  const [agentFile, setAgentFile] =
+    useState(null);
+
   const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(false);
+
+  const [loading, setLoading] =
+    useState(false);
 
   const handleUpload = async () => {
     if (!cdrFile || !agentFile) {
@@ -46,30 +52,27 @@ function AgentReport() {
       setData(sorted);
     } catch (err) {
       console.error(err);
-      alert(
-        "Upload failed"
-      );
+      alert("Upload failed");
     } finally {
       setLoading(false);
     }
   };
 
-  // Hide percentage columns
+  // Only disposition columns
   const getColumns = () => {
-    if (data.length === 0)
-      return [];
+    if (!data.length) return [];
 
     return Object.keys(
       data[0]
     ).filter(
       (key) =>
-        key !== "agent" &&
-        key !== "total" &&
-        key !==
-        "talkTimeTotal" &&
-        key !== "callCount" &&
-        key !==
-        "avgTalkTime" &&
+        ![
+          "agent",
+          "total",
+          "talkTimeTotal",
+          "callCount",
+          "avgTalkTime",
+        ].includes(key) &&
         !key.includes(
           "Percentage"
         )
@@ -78,32 +81,25 @@ function AgentReport() {
 
   const columns = getColumns();
 
-  // Format cell value
+  // Cell formatting
   const formatValue = (
     col,
     row
   ) => {
-    const value = row[col];
-
-    if (
-      value === undefined ||
-      value === null
-    ) {
-      return "-";
-    }
+    const value =
+      row[col] ?? 0;
 
     const percentageKey =
       `${col}Percentage`;
 
-    // Show: count | percentage
     if (
       row[
-      percentageKey
+        percentageKey
       ] !== undefined
     ) {
       return `${value} | ${Number(
         row[
-        percentageKey
+          percentageKey
         ]
       ).toFixed(2)}%`;
     }
@@ -114,61 +110,57 @@ function AgentReport() {
   // Average Row
   const calculateAverages =
     () => {
-      if (
-        data.length === 0
-      )
+      if (!data.length)
         return null;
 
       const avgRow = {
         agent: "Average",
       };
 
+      const totalAvg =
+        data.reduce(
+          (
+            sum,
+            item
+          ) =>
+            sum +
+            Number(
+              item.total || 0
+            ),
+          0
+        ) / data.length;
+
       avgRow.total =
-        (
-          data.reduce(
-            (
-              sum,
-              d
-            ) =>
-              sum +
-              Number(
-                d.total || 0
-              ),
-            0
-          ) / data.length
-        ).toFixed(2);
+        totalAvg.toFixed(2);
 
       columns.forEach(
         (col) => {
-          const avgValue =
+          const avg =
             data.reduce(
               (
-                acc,
-                d
+                sum,
+                item
               ) =>
-                acc +
+                sum +
                 Number(
-                  d[col] || 0
+                  item[col] ||
+                    0
                 ),
               0
             ) / data.length;
 
           avgRow[col] =
-            avgValue.toFixed(
-              2
-            );
+            avg.toFixed(2);
 
-          // % based on avg total
           avgRow[
             `${col}Percentage`
           ] =
-            avgRow.total >
-              0
+            totalAvg > 0
               ? (
-                (avgValue /
-                  avgRow.total) *
-                100
-              ).toFixed(2)
+                  (avg /
+                    totalAvg) *
+                  100
+                ).toFixed(2)
               : 0;
         }
       );
@@ -179,9 +171,7 @@ function AgentReport() {
   // Total Row
   const calculateTotals =
     () => {
-      if (
-        data.length === 0
-      )
+      if (!data.length)
         return null;
 
       const totalRow = {
@@ -190,11 +180,11 @@ function AgentReport() {
           data.reduce(
             (
               sum,
-              d
+              item
             ) =>
               sum +
               Number(
-                d.total || 0
+                item.total || 0
               ),
             0
           ),
@@ -206,11 +196,12 @@ function AgentReport() {
             data.reduce(
               (
                 sum,
-                d
+                item
               ) =>
                 sum +
                 Number(
-                  d[col] || 0
+                  item[col] ||
+                    0
                 ),
               0
             );
@@ -226,17 +217,15 @@ function AgentReport() {
   const totalRow =
     calculateTotals();
 
-  // Header labels
   const formatHeader = (
     col
-  ) => {
-    return col
+  ) =>
+    col
       .replace(
         /([A-Z])/g,
         " $1"
       )
       .trim();
-  };
 
   return (
     <div
@@ -252,12 +241,10 @@ function AgentReport() {
             styles.title
           }
         >
-          Agent
-          Performance
+          Agent Performance
           Report
         </h2>
 
-        {/* Upload */}
         <div
           style={
             styles.uploadGrid
@@ -341,10 +328,9 @@ function AgentReport() {
         </button>
       </div>
 
-      {/* TABLE */}
       {!loading &&
         data.length >
-        0 && (
+          0 && (
           <div
             style={
               styles.tableCard
@@ -420,7 +406,7 @@ function AgentReport() {
                         style={
                           index %
                             2 ===
-                            0
+                          0
                             ? styles.rowEven
                             : styles.rowOdd
                         }
@@ -468,7 +454,6 @@ function AgentReport() {
                     )
                   )}
 
-                  {/* Average Row */}
                   {avgRow && (
                     <tr
                       style={
@@ -515,7 +500,6 @@ function AgentReport() {
                     </tr>
                   )}
 
-                  {/* Total Row */}
                   {totalRow && (
                     <tr
                       style={
@@ -554,7 +538,7 @@ function AgentReport() {
                           >
                             {
                               totalRow[
-                              col
+                                col
                               ]
                             }
                           </td>
@@ -567,140 +551,21 @@ function AgentReport() {
             </div>
           </div>
         )}
-
-      {!loading &&
-        data.length ===
-        0 && (
-          <p
-            style={
-              styles.noData
-            }
-          >
-            No data available
-          </p>
-        )}
     </div>
   );
 }
 
 const styles = {
-  container: {
-    minHeight: "100vh",
-    background: "#f5f7fa",
-    padding: "20px",
-    fontFamily:
-      "Arial, sans-serif",
-  },
-
-  card: {
-    background: "#fff",
-    padding: "25px",
-    borderRadius: "12px",
-    boxShadow:
-      "0 4px 12px rgba(0,0,0,0.08)",
-    maxWidth: "900px",
-    margin: "0 auto",
-  },
-
-  title: {
-    marginBottom: "20px",
-    fontWeight: "600",
-  },
-
+  ...yourExistingStyles,
   subtitle: {
     marginBottom: "15px",
     fontWeight: "600",
   },
-
-  uploadGrid: {
-    display: "flex",
-    gap: "20px",
-    flexWrap: "wrap",
-  },
-
-  inputGroup: {
-    flex: 1,
-    minWidth: "250px",
-  },
-
-  label: {
-    marginBottom: "6px",
-    display: "block",
-  },
-
-  input: {
-    width: "100%",
-    padding: "8px",
-  },
-
-  button: {
-    marginTop: "20px",
-    padding: "10px 20px",
-    background: "#2563eb",
-    color: "#fff",
-    border: "none",
-    borderRadius: "6px",
-    cursor: "pointer",
-  },
-
-  tableCard: {
-    marginTop: "30px",
-    background: "#fff",
-    padding: "20px",
-    borderRadius: "12px",
-  },
-
-  tableWrapper: {
-    overflowX: "auto",
-  },
-
-  table: {
-    width: "100%",
-    borderCollapse:
-      "collapse",
-  },
-
-  th: {
-    background: "#f1f5f9",
-    padding: "10px",
-    textAlign: "left",
-    whiteSpace: "nowrap",
-  },
-
-  td: {
-    padding: "10px",
-    whiteSpace: "nowrap",
-  },
-
-  tdBold: {
-    padding: "10px",
-    fontWeight: "700",
-    whiteSpace: "nowrap",
-  },
-
-  rowEven: {
-    background: "#fff",
-  },
-
-  rowOdd: {
-    background: "#fafafa",
-  },
-
-  avgRow: {
-    background: "#e0f2fe",
-    borderTop:
-      "2px solid #2563eb",
-  },
-
   totalRow: {
-    background: "#dcfce7",
+    background:
+      "#dcfce7",
     borderTop:
       "2px solid #16a34a",
-  },
-
-  noData: {
-    textAlign: "center",
-    marginTop: "30px",
   },
 };
 
