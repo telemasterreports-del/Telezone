@@ -66,7 +66,7 @@ function Home() {
     const count = item[col] ?? 0;
     const avg = item[`${col}Avg`] ?? "0.00%";
 
-    return `${count} | ${avg}`;
+    return `${count} (${avg})`;
   };
 
   return (
