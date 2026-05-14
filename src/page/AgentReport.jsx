@@ -1,75 +1,77 @@
-import React, { useState } from "react";
+import React, {
+  useState,
+} from "react";
 import axios from "axios";
 
 function AgentReport() {
-  const [cdrFile, setCdrFile] =
-    useState(null);
-
   const [agentFile, setAgentFile] =
     useState(null);
 
   const [data, setData] =
     useState([]);
 
+  const [overall, setOverall] =
+    useState(null);
+
   const [loading, setLoading] =
     useState(false);
 
-  const handleUpload = async () => {
-    if (!cdrFile || !agentFile) {
-      return alert(
-        "Upload both CDR and Agent files"
-      );
-    }
-
-    const formData =
-      new FormData();
-
-    formData.append(
-      "cdrFile",
-      cdrFile
-    );
-
-    formData.append(
-      "agentFile",
-      agentFile
-    );
-
-    try {
-      setLoading(true);
-
-      const res =
-        await axios.post(
-          "/api/agent-report",
-          formData
+  const handleUpload =
+    async () => {
+      if (!agentFile) {
+        return alert(
+          "Upload disposition file"
         );
+      }
 
-      console.log(
-        "API Response:",
-        res.data
+      const formData =
+        new FormData();
+
+      formData.append(
+        "agentFile",
+        agentFile
       );
 
-      const responseData =
-        Array.isArray(
+      try {
+        setLoading(true);
+
+        const res =
+          await axios.post(
+            "/api/agent-report",
+            formData
+          );
+
+        console.log(
+          "API Response:",
           res.data
-        )
-          ? res.data
-          : res.data?.agents ||
-            [];
-
-      const sorted =
-        responseData.sort(
-          (a, b) =>
-            b.total - a.total
         );
 
-      setData(sorted);
-    } catch (err) {
-      console.error(err);
-      alert("Upload failed");
-    } finally {
-      setLoading(false);
-    }
-  };
+        const responseData =
+          res.data?.agents ||
+          [];
+
+        const sorted =
+          responseData.sort(
+            (a, b) =>
+              b.total -
+              a.total
+          );
+
+        setData(sorted);
+
+        setOverall(
+          res.data?.overall ||
+            null
+        );
+      } catch (err) {
+        console.error(err);
+        alert(
+          "Upload failed"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
 
   // Get only disposition columns
   const getColumns = () => {
@@ -83,9 +85,6 @@ function AgentReport() {
         ![
           "agent",
           "total",
-          "talkTimeTotal",
-          "callCount",
-          "avgTalkTime",
         ].includes(key) &&
         !key.includes(
           "Percentage"
@@ -96,7 +95,7 @@ function AgentReport() {
   const columns =
     getColumns();
 
-  // Format cell
+  // Format value
   const formatValue = (
     col,
     row
@@ -140,13 +139,16 @@ function AgentReport() {
           ) =>
             sum +
             Number(
-              item.total || 0
+              item.total ||
+                0
             ),
           0
         ) / data.length;
 
       avgRow.total =
-        totalAvg.toFixed(2);
+        totalAvg.toFixed(
+          2
+        );
 
       columns.forEach(
         (col) => {
@@ -158,11 +160,13 @@ function AgentReport() {
               ) =>
                 sum +
                 Number(
-                  item[col] ||
-                    0
+                  item[
+                    col
+                  ] || 0
                 ),
               0
-            ) / data.length;
+            ) /
+            data.length;
 
           avgRow[col] =
             avg.toFixed(
@@ -185,54 +189,8 @@ function AgentReport() {
       return avgRow;
     };
 
-  // Total row
-  const calculateTotals =
-    () => {
-      if (!data.length)
-        return null;
-
-      const totalRow = {
-        agent: "Total",
-        total:
-          data.reduce(
-            (
-              sum,
-              item
-            ) =>
-              sum +
-              Number(
-                item.total || 0
-              ),
-            0
-          ),
-      };
-
-      columns.forEach(
-        (col) => {
-          totalRow[col] =
-            data.reduce(
-              (
-                sum,
-                item
-              ) =>
-                sum +
-                Number(
-                  item[col] ||
-                    0
-                ),
-              0
-            );
-        }
-      );
-
-      return totalRow;
-    };
-
   const avgRow =
     calculateAverages();
-
-  const totalRow =
-    calculateTotals();
 
   const formatHeader = (
     col
@@ -258,7 +216,8 @@ function AgentReport() {
             styles.title
           }
         >
-          Agent Performance
+          Agent
+          Performance
           Report
         </h2>
 
@@ -277,37 +236,8 @@ function AgentReport() {
                 styles.label
               }
             >
-              CDR File
-            </label>
-
-            <input
-              type="file"
-              accept=".csv"
-              onChange={(
-                e
-              ) =>
-                setCdrFile(
-                  e.target
-                    .files[0]
-                )
-              }
-              style={
-                styles.input
-              }
-            />
-          </div>
-
-          <div
-            style={
-              styles.inputGroup
-            }
-          >
-            <label
-              style={
-                styles.label
-              }
-            >
-              Agent File
+              Disposition
+              File
             </label>
 
             <input
@@ -517,7 +447,7 @@ function AgentReport() {
                     </tr>
                   )}
 
-                  {totalRow && (
+                  {overall && (
                     <tr
                       style={
                         styles.totalRow
@@ -537,7 +467,7 @@ function AgentReport() {
                         }
                       >
                         {
-                          totalRow.total
+                          overall.total
                         }
                       </td>
 
@@ -553,11 +483,10 @@ function AgentReport() {
                               styles.tdBold
                             }
                           >
-                            {
-                              totalRow[
-                                col
-                              ]
-                            }
+                            {formatValue(
+                              col,
+                              overall
+                            )}
                           </td>
                         )
                       )}
@@ -574,10 +503,12 @@ function AgentReport() {
 
 const styles = {
   container: {
-    minHeight: "100vh",
+    minHeight:
+      "100vh",
     background:
       "#f4f7fb",
-    padding: "30px",
+    padding:
+      "30px",
     fontFamily:
       "Inter, sans-serif",
   },
@@ -585,48 +516,58 @@ const styles = {
   card: {
     background:
       "#ffffff",
-    padding: "28px",
+    padding:
+      "28px",
     borderRadius:
       "16px",
     boxShadow:
       "0 4px 20px rgba(0,0,0,0.08)",
-    maxWidth: "1000px",
+    maxWidth:
+      "1000px",
     margin:
       "0 auto 30px",
   },
 
   title: {
-    fontSize: "28px",
-    fontWeight: "700",
-    marginBottom: "24px",
+    fontSize:
+      "28px",
+    fontWeight:
+      "700",
+    marginBottom:
+      "24px",
   },
 
   subtitle: {
-    fontSize: "20px",
-    fontWeight: "600",
-    marginBottom: "20px",
+    fontSize:
+      "20px",
+    fontWeight:
+      "600",
+    marginBottom:
+      "20px",
   },
 
   uploadGrid: {
     display: "flex",
     gap: "20px",
-    flexWrap: "wrap",
   },
 
   inputGroup: {
     flex: 1,
-    minWidth: "280px",
   },
 
   label: {
-    display: "block",
-    marginBottom: "8px",
-    fontWeight: "500",
+    display:
+      "block",
+    marginBottom:
+      "8px",
+    fontWeight:
+      "500",
   },
 
   input: {
     width: "100%",
-    padding: "10px",
+    padding:
+      "10px",
     border:
       "1px solid #d1d5db",
     borderRadius:
@@ -634,7 +575,8 @@ const styles = {
   },
 
   button: {
-    marginTop: "20px",
+    marginTop:
+      "20px",
     padding:
       "12px 24px",
     background:
@@ -643,8 +585,10 @@ const styles = {
     border: "none",
     borderRadius:
       "8px",
-    cursor: "pointer",
-    fontWeight: "600",
+    cursor:
+      "pointer",
+    fontWeight:
+      "600",
   },
 
   tableCard: {
@@ -652,13 +596,15 @@ const styles = {
       "#ffffff",
     borderRadius:
       "16px",
-    padding: "24px",
+    padding:
+      "24px",
     boxShadow:
       "0 4px 20px rgba(0,0,0,0.08)",
   },
 
   tableWrapper: {
-    overflowX: "auto",
+    overflowX:
+      "auto",
     borderRadius:
       "12px",
   },
@@ -673,8 +619,10 @@ const styles = {
     background:
       "#1e293b",
     color: "#fff",
-    padding: "14px",
-    textAlign: "left",
+    padding:
+      "14px",
+    textAlign:
+      "left",
     whiteSpace:
       "nowrap",
     position:
@@ -683,7 +631,8 @@ const styles = {
   },
 
   td: {
-    padding: "14px",
+    padding:
+      "14px",
     borderBottom:
       "1px solid #e5e7eb",
     whiteSpace:
@@ -691,13 +640,17 @@ const styles = {
   },
 
   tdAgent: {
-    padding: "14px",
-    fontWeight: "600",
+    padding:
+      "14px",
+    fontWeight:
+      "600",
   },
 
   tdBold: {
-    padding: "14px",
-    fontWeight: "700",
+    padding:
+      "14px",
+    fontWeight:
+      "700",
   },
 
   rowEven: {
