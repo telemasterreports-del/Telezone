@@ -2,6 +2,7 @@ import React, {
   useState,
 } from "react";
 import axios from "axios";
+import { apiUrl } from "../api";
 
 function AgentReport() {
   const [agentFile, setAgentFile] =
@@ -37,7 +38,9 @@ function AgentReport() {
 
         const res =
           await axios.post(
-            "/api/agent-report",
+            apiUrl(
+              "/api/agent-report"
+            ),
             formData
           );
 

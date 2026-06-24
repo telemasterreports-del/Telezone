@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { apiUrl } from "../api";
 
 function Home() {
   const [file, setFile] = useState(null);
@@ -25,10 +26,10 @@ function Home() {
       let res;
 
       if (mode === "cdr") {
-        res = await axios.post("/api/analyze", formData);
+        res = await axios.post(apiUrl("/api/analyze"), formData);
       } else {
         formData.append("mode", mode);
-        res = await axios.post("/api/upload", formData);
+        res = await axios.post(apiUrl("/api/upload"), formData);
       }
 
       setResult(res.data);
@@ -41,7 +42,7 @@ function Home() {
   };
 
   const downloadFile = (url) => {
-    window.open(url, "_self");
+    window.open(apiUrl(url), "_self");
   };
 
   // Dynamic disposition columns
