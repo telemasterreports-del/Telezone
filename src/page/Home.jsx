@@ -1,7 +1,60 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { apiUrl } from "../api";
+
+const US_STATES = [
+  "Alabama",
+  "Alaska",
+  "Arizona",
+  "Arkansas",
+  "California",
+  "Colorado",
+  "Connecticut",
+  "Delaware",
+  "Florida",
+  "Georgia",
+  "Hawaii",
+  "Idaho",
+  "Illinois",
+  "Indiana",
+  "Iowa",
+  "Kansas",
+  "Kentucky",
+  "Louisiana",
+  "Maine",
+  "Maryland",
+  "Massachusetts",
+  "Michigan",
+  "Minnesota",
+  "Mississippi",
+  "Missouri",
+  "Montana",
+  "Nebraska",
+  "Nevada",
+  "New Hampshire",
+  "New Jersey",
+  "New Mexico",
+  "New York",
+  "North Carolina",
+  "North Dakota",
+  "Ohio",
+  "Oklahoma",
+  "Oregon",
+  "Pennsylvania",
+  "Rhode Island",
+  "South Carolina",
+  "South Dakota",
+  "Tennessee",
+  "Texas",
+  "Utah",
+  "Vermont",
+  "Virginia",
+  "Washington",
+  "West Virginia",
+  "Wisconsin",
+  "Wyoming",
+];
 
 function Home() {
   const [file, setFile] = useState(null);
@@ -9,8 +62,41 @@ function Home() {
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState("cdr");
   const [timezone, setTimezone] = useState("ALL");
+  const [selectedStates, setSelectedStates] = useState([]);
+  const [trackedJobs, setTrackedJobs] = useState([]);
+  const [jobsLoading, setJobsLoading] = useState(false);
+  const [jobsError, setJobsError] = useState("");
 
   const navigate = useNavigate();
+
+  const loadTrackedJobs = useCallback(async () => {
+    try {
+      setJobsLoading(true);
+      setJobsError("");
+
+      const res = await axios.get(apiUrl("/api/jobs"));
+      setTrackedJobs(res.data?.jobs || []);
+    } catch (err) {
+      console.error(err);
+      setJobsError(
+        err.response?.data?.message ||
+          "File tracking is not available"
+      );
+    } finally {
+      setJobsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadTrackedJobs();
+
+    const timer = window.setInterval(
+      loadTrackedJobs,
+      10000
+    );
+
+    return () => window.clearInterval(timer);
+  }, [loadTrackedJobs]);
 
   const handleUpload = async () => {
     if (!file) return alert("Select a CSV file");
@@ -18,6 +104,7 @@ function Home() {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("timezone", timezone);
+    formData.append("states", JSON.stringify(selectedStates));
 
     try {
       setLoading(true);
@@ -33,6 +120,7 @@ function Home() {
       }
 
       setResult(res.data);
+      loadTrackedJobs();
     } catch (err) {
       console.error(err);
       alert("Upload failed");
@@ -43,6 +131,47 @@ function Home() {
 
   const downloadFile = (url) => {
     window.open(apiUrl(url), "_self");
+  };
+
+  const getOutputFiles = (job) => [
+    ...(job.timezoneOutputs || []),
+    ...(job.stateExtracts || []),
+  ];
+
+  const formatJobType = (type) => {
+    if (type === "cdr_summary") return "CDR Summary";
+    if (type === "timezone_split") return "Timezone Split";
+    return type || "Workflow";
+  };
+
+  const formatDateTime = (value) => {
+    if (!value) return "-";
+
+    return new Date(value).toLocaleString();
+  };
+
+  const getStatusStyle = (status) => {
+    if (status === "completed") {
+      return styles.statusCompleted;
+    }
+
+    if (status === "failed") {
+      return styles.statusFailed;
+    }
+
+    return styles.statusProcessing;
+  };
+
+  const toggleState = (state) => {
+    setSelectedStates((current) =>
+      current.includes(state)
+        ? current.filter((item) => item !== state)
+        : [...current, state]
+    );
+  };
+
+  const clearSelectedStates = () => {
+    setSelectedStates([]);
   };
 
   // Dynamic disposition columns
@@ -132,6 +261,47 @@ function Home() {
           )}
         </div>
 
+        {mode === "timezone" && (
+          <div style={styles.statePanel}>
+            <div style={styles.statePanelHeader}>
+              <label style={styles.label}>
+                State extracts
+              </label>
+
+              {selectedStates.length > 0 && (
+                <button
+                  type="button"
+                  onClick={clearSelectedStates}
+                  style={styles.textBtn}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+
+            <div style={styles.stateGrid}>
+              {US_STATES.map((state) => (
+                <label
+                  key={state}
+                  style={{
+                    ...styles.stateOption,
+                    ...(selectedStates.includes(state)
+                      ? styles.stateOptionSelected
+                      : {}),
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedStates.includes(state)}
+                    onChange={() => toggleState(state)}
+                  />
+                  <span>{state}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div style={styles.uploadBox}>
           <input
             type="file"
@@ -164,6 +334,129 @@ function Home() {
           Processing file...
         </div>
       )}
+
+      <div style={styles.workflowCard}>
+        <div style={styles.workflowHeader}>
+          <div>
+            <h3 style={styles.sectionTitle}>
+              Tracked File Workflow
+            </h3>
+            <p style={styles.workflowSubTitle}>
+              Uploads are listed here with their current processing state.
+            </p>
+          </div>
+
+          <button
+            onClick={loadTrackedJobs}
+            style={styles.secondaryBtn}
+            disabled={jobsLoading}
+          >
+            {jobsLoading ? "Refreshing..." : "Refresh"}
+          </button>
+        </div>
+
+        {jobsError && (
+          <div style={styles.errorBox}>
+            {jobsError}
+          </div>
+        )}
+
+        {!jobsError && trackedJobs.length === 0 && (
+          <div style={styles.emptyBox}>
+            No tracked files yet.
+          </div>
+        )}
+
+        {!jobsError &&
+          trackedJobs.map((job) => {
+            const outputFiles = getOutputFiles(job);
+
+            return (
+              <div
+                key={job._id}
+                style={styles.jobRow}
+              >
+                <div style={styles.jobMain}>
+                  <div>
+                    <p style={styles.jobName}>
+                      {job.originalFileName}
+                    </p>
+                    <p style={styles.jobMeta}>
+                      {formatJobType(job.processType)} - Started{" "}
+                      {formatDateTime(job.startedAt || job.createdAt)}
+                    </p>
+                  </div>
+
+                  <span
+                    style={{
+                      ...styles.statusPill,
+                      ...getStatusStyle(job.status),
+                    }}
+                  >
+                    {job.status}
+                  </span>
+                </div>
+
+                <div style={styles.workflowSteps}>
+                  <span style={styles.stepDone}>Uploaded</span>
+                  <span
+                    style={
+                      job.status === "failed"
+                        ? styles.stepFailed
+                        : styles.stepDone
+                    }
+                  >
+                    Processing
+                  </span>
+                  <span
+                    style={
+                      job.status === "completed"
+                        ? styles.stepDone
+                        : job.status === "failed"
+                        ? styles.stepFailed
+                        : styles.stepPending
+                    }
+                  >
+                    {job.status === "failed" ? "Failed" : "Completed"}
+                  </span>
+                </div>
+
+                <div style={styles.jobStats}>
+                  <span>Input rows: {job.totalInputRows || 0}</span>
+                  <span>Output rows: {job.totalOutputRows || 0}</span>
+                  {job.selectedTimezone && (
+                    <span>Timezone: {job.selectedTimezone}</span>
+                  )}
+                  {job.selectedStates?.length > 0 && (
+                    <span>States: {job.selectedStates.join(", ")}</span>
+                  )}
+                  <span>Finished: {formatDateTime(job.completedAt)}</span>
+                </div>
+
+                {job.error && (
+                  <div style={styles.errorBox}>
+                    {job.error}
+                  </div>
+                )}
+
+                {outputFiles.length > 0 && (
+                  <div style={styles.fileList}>
+                    {outputFiles.map((file, index) => (
+                      <button
+                        key={`${file.fileName}-${index}`}
+                        onClick={() => downloadFile(file.url)}
+                        style={styles.fileChip}
+                      >
+                        {file.zone || file.state || file.label || "File"} -{" "}
+                        {file.rowCount || 0} rows
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+      </div>
 
       {/* ===================== CDR REPORT ===================== */}
       {!loading &&
@@ -332,6 +625,24 @@ function Home() {
                 </button>
               )
             )}
+
+            {result.stateFiles?.map(
+              (f, i) => (
+                <button
+                  key={`state-${i}`}
+                  onClick={() =>
+                    downloadFile(
+                      f.url
+                    )
+                  }
+                  style={
+                    styles.downloadBtn
+                  }
+                >
+                  Download {f.state}
+                </button>
+              )
+            )}
           </div>
         )}
     </div>
@@ -400,6 +711,58 @@ const styles = {
     fontSize: "14px",
   },
 
+  statePanel: {
+    marginTop: "18px",
+    border: "1px solid #e5e7eb",
+    borderRadius: "8px",
+    padding: "14px",
+    background: "#f9fafb",
+  },
+
+  statePanelHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "12px",
+    marginBottom: "10px",
+  },
+
+  stateGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+    gap: "8px",
+    maxHeight: "220px",
+    overflowY: "auto",
+  },
+
+  stateOption: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    border: "1px solid #e5e7eb",
+    borderRadius: "8px",
+    padding: "8px",
+    background: "#fff",
+    color: "#374151",
+    cursor: "pointer",
+    fontSize: "13px",
+    fontWeight: "600",
+  },
+
+  stateOptionSelected: {
+    border: "1px solid #2563eb",
+    background: "#eff6ff",
+    color: "#1d4ed8",
+  },
+
+  textBtn: {
+    background: "transparent",
+    border: "none",
+    color: "#2563eb",
+    cursor: "pointer",
+    fontWeight: "700",
+  },
+
   uploadBox: {
     marginTop: "20px",
   },
@@ -435,6 +798,158 @@ const styles = {
     padding: "20px",
     borderRadius: "16px",
     textAlign: "center",
+  },
+
+  workflowCard: {
+    background: "#fff",
+    borderRadius: "12px",
+    padding: "24px",
+    boxShadow:
+      "0 10px 30px rgba(0,0,0,0.08)",
+    marginBottom: "24px",
+  },
+
+  workflowHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: "16px",
+    alignItems: "flex-start",
+    marginBottom: "18px",
+  },
+
+  workflowSubTitle: {
+    color: "#6b7280",
+    margin: "6px 0 0",
+    fontSize: "14px",
+  },
+
+  errorBox: {
+    background: "#fef2f2",
+    color: "#b91c1c",
+    padding: "12px",
+    borderRadius: "8px",
+    marginTop: "12px",
+  },
+
+  emptyBox: {
+    background: "#f9fafb",
+    color: "#6b7280",
+    padding: "16px",
+    borderRadius: "8px",
+  },
+
+  jobRow: {
+    border: "1px solid #e5e7eb",
+    borderRadius: "8px",
+    padding: "16px",
+    marginTop: "14px",
+  },
+
+  jobMain: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: "16px",
+    alignItems: "flex-start",
+  },
+
+  jobName: {
+    margin: 0,
+    fontWeight: "700",
+    color: "#111827",
+    wordBreak: "break-word",
+  },
+
+  jobMeta: {
+    margin: "6px 0 0",
+    color: "#6b7280",
+    fontSize: "13px",
+  },
+
+  statusPill: {
+    borderRadius: "999px",
+    padding: "6px 10px",
+    fontSize: "12px",
+    fontWeight: "700",
+    textTransform: "capitalize",
+    whiteSpace: "nowrap",
+  },
+
+  statusCompleted: {
+    background: "#dcfce7",
+    color: "#166534",
+  },
+
+  statusFailed: {
+    background: "#fee2e2",
+    color: "#991b1b",
+  },
+
+  statusProcessing: {
+    background: "#fef3c7",
+    color: "#92400e",
+  },
+
+  workflowSteps: {
+    display: "flex",
+    gap: "8px",
+    flexWrap: "wrap",
+    marginTop: "14px",
+  },
+
+  stepDone: {
+    background: "#ecfdf5",
+    color: "#047857",
+    border: "1px solid #a7f3d0",
+    borderRadius: "999px",
+    padding: "6px 10px",
+    fontSize: "12px",
+    fontWeight: "700",
+  },
+
+  stepPending: {
+    background: "#f9fafb",
+    color: "#6b7280",
+    border: "1px solid #e5e7eb",
+    borderRadius: "999px",
+    padding: "6px 10px",
+    fontSize: "12px",
+    fontWeight: "700",
+  },
+
+  stepFailed: {
+    background: "#fef2f2",
+    color: "#b91c1c",
+    border: "1px solid #fecaca",
+    borderRadius: "999px",
+    padding: "6px 10px",
+    fontSize: "12px",
+    fontWeight: "700",
+  },
+
+  jobStats: {
+    display: "flex",
+    gap: "12px",
+    flexWrap: "wrap",
+    marginTop: "14px",
+    color: "#374151",
+    fontSize: "13px",
+  },
+
+  fileList: {
+    display: "flex",
+    gap: "10px",
+    flexWrap: "wrap",
+    marginTop: "14px",
+  },
+
+  fileChip: {
+    background: "#eff6ff",
+    color: "#1d4ed8",
+    border: "1px solid #bfdbfe",
+    padding: "8px 10px",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontWeight: "700",
   },
 
   tableCard: {
