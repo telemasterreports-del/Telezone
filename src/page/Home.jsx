@@ -75,7 +75,11 @@ function Home() {
       setJobsError("");
 
       const res = await axios.get(apiUrl("/api/jobs"));
-      setTrackedJobs(res.data?.jobs || []);
+      setTrackedJobs(
+        (res.data?.jobs || []).filter(
+          (job) => job.processType === "timezone_split"
+        )
+      );
     } catch (err) {
       console.error(err);
       setJobsError(
@@ -167,6 +171,13 @@ function Home() {
 
   const clearSelectedStates = () => {
     setSelectedStates([]);
+  };
+
+  const getStateSummaryEntries = (states = [], counts = {}) => {
+    return states.map((state) => [
+      state,
+      counts?.[state] || 0,
+    ]);
   };
 
   const renderOutputGroup = (title, files, getName) => {
@@ -472,32 +483,55 @@ function Home() {
                 </div>
 
                 {job.processType === "timezone_split" && (
-                  <div style={styles.filterSummary}>
-                    <div style={styles.filterBlock}>
-                      <span style={styles.filterLabel}>Timezone</span>
-                      <span style={styles.filterValue}>
-                        {job.selectedTimezone || "ALL"}
-                      </span>
+                  <>
+                    <div style={styles.filterSummary}>
+                      <div style={styles.filterBlock}>
+                        <span style={styles.filterLabel}>Timezone</span>
+                        <span style={styles.filterValue}>
+                          {job.selectedTimezone || "ALL"}
+                        </span>
+                      </div>
+
+                      <div style={styles.filterBlock}>
+                        <span style={styles.filterLabel}>State filter</span>
+                        <span style={styles.filterValue}>
+                          {hasStateFilter
+                            ? job.selectedStates.join(", ")
+                            : "All states"}
+                        </span>
+                      </div>
+
+                      <div style={styles.filterBlock}>
+                        <span style={styles.filterLabel}>Result logic</span>
+                        <span style={styles.filterValue}>
+                          {hasStateFilter
+                            ? "Timezone + selected states"
+                            : "Timezone only"}
+                        </span>
+                      </div>
                     </div>
 
-                    <div style={styles.filterBlock}>
-                      <span style={styles.filterLabel}>State filter</span>
-                      <span style={styles.filterValue}>
-                        {hasStateFilter
-                          ? job.selectedStates.join(", ")
-                          : "All states"}
-                      </span>
-                    </div>
-
-                    <div style={styles.filterBlock}>
-                      <span style={styles.filterLabel}>Result logic</span>
-                      <span style={styles.filterValue}>
-                        {hasStateFilter
-                          ? "Timezone + selected states"
-                          : "Timezone only"}
-                      </span>
-                    </div>
-                  </div>
+                    {hasStateFilter && (
+                      <div style={styles.stateCountGrid}>
+                        {getStateSummaryEntries(
+                          job.selectedStates,
+                          job.selectedStateCounts
+                        ).map(([state, count]) => (
+                          <span
+                            key={state}
+                            style={{
+                              ...styles.stateCountChip,
+                              ...(count > 0
+                                ? styles.stateCountMatched
+                                : styles.stateCountEmpty),
+                            }}
+                          >
+                            {state}: {count}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {job.error && (
@@ -661,6 +695,33 @@ function Home() {
                 </div>
               ))}
             </div>
+
+            {result.selectedStates?.length > 0 && (
+              <div style={styles.resultStatePanel}>
+                <h4 style={styles.resultStateTitle}>
+                  Selected state matches
+                </h4>
+
+                <div style={styles.stateCountGrid}>
+                  {getStateSummaryEntries(
+                    result.selectedStates,
+                    result.stateSummary
+                  ).map(([state, count]) => (
+                    <span
+                      key={state}
+                      style={{
+                        ...styles.stateCountChip,
+                        ...(count > 0
+                          ? styles.stateCountMatched
+                          : styles.stateCountEmpty),
+                      }}
+                    >
+                      {state}: {count}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <h3
               style={{
@@ -1011,6 +1072,33 @@ const styles = {
     lineHeight: 1.35,
   },
 
+  stateCountGrid: {
+    display: "flex",
+    gap: "8px",
+    flexWrap: "wrap",
+    marginTop: "12px",
+  },
+
+  stateCountChip: {
+    borderRadius: "999px",
+    padding: "7px 10px",
+    fontSize: "12px",
+    fontWeight: "800",
+    border: "1px solid transparent",
+  },
+
+  stateCountMatched: {
+    background: "#ecfdf5",
+    color: "#047857",
+    borderColor: "#a7f3d0",
+  },
+
+  stateCountEmpty: {
+    background: "#f9fafb",
+    color: "#6b7280",
+    borderColor: "#e5e7eb",
+  },
+
   outputGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
@@ -1170,6 +1258,19 @@ const styles = {
     borderRadius: "16px",
     minWidth: "150px",
     textAlign: "center",
+  },
+
+  resultStatePanel: {
+    marginTop: "18px",
+    padding: "14px",
+    border: "1px solid #e5e7eb",
+    borderRadius: "8px",
+    background: "#f8fafc",
+  },
+
+  resultStateTitle: {
+    margin: "0 0 10px",
+    color: "#111827",
   },
 
   downloadBtn: {
