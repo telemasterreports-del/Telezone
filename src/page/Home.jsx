@@ -133,11 +133,6 @@ function Home() {
     window.open(apiUrl(url), "_self");
   };
 
-  const getOutputFiles = (job) => [
-    ...(job.timezoneOutputs || []),
-    ...(job.stateExtracts || []),
-  ];
-
   const formatJobType = (type) => {
     if (type === "cdr_summary") return "CDR Summary";
     if (type === "timezone_split") return "Timezone Split";
@@ -172,6 +167,48 @@ function Home() {
 
   const clearSelectedStates = () => {
     setSelectedStates([]);
+  };
+
+  const renderOutputGroup = (title, files, getName) => {
+    if (!files?.length) {
+      return null;
+    }
+
+    return (
+      <div style={styles.outputGroup}>
+        <div style={styles.outputGroupHeader}>
+          <span>{title}</span>
+          <span style={styles.outputCount}>
+            {files.length} file{files.length === 1 ? "" : "s"}
+          </span>
+        </div>
+
+        <div style={styles.outputList}>
+          {files.map((file, index) => (
+            <div
+              key={`${file.fileName}-${index}`}
+              style={styles.outputItem}
+            >
+              <div>
+                <p style={styles.outputName}>
+                  {getName(file)}
+                </p>
+                <p style={styles.outputMeta}>
+                  {file.rowCount || 0} rows
+                </p>
+              </div>
+
+              <button
+                onClick={() => downloadFile(file.url)}
+                style={styles.outputDownloadBtn}
+              >
+                Download
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   // Dynamic disposition columns
@@ -369,7 +406,9 @@ function Home() {
 
         {!jobsError &&
           trackedJobs.map((job) => {
-            const outputFiles = getOutputFiles(job);
+            const timezoneFiles = job.timezoneOutputs || [];
+            const stateFiles = job.stateExtracts || [];
+            const hasStateFilter = job.selectedStates?.length > 0;
 
             return (
               <div
@@ -433,26 +472,54 @@ function Home() {
                   <span>Finished: {formatDateTime(job.completedAt)}</span>
                 </div>
 
+                {job.processType === "timezone_split" && (
+                  <div style={styles.filterSummary}>
+                    <div style={styles.filterBlock}>
+                      <span style={styles.filterLabel}>Timezone</span>
+                      <span style={styles.filterValue}>
+                        {job.selectedTimezone || "ALL"}
+                      </span>
+                    </div>
+
+                    <div style={styles.filterBlock}>
+                      <span style={styles.filterLabel}>State filter</span>
+                      <span style={styles.filterValue}>
+                        {hasStateFilter
+                          ? job.selectedStates.join(", ")
+                          : "All states"}
+                      </span>
+                    </div>
+
+                    <div style={styles.filterBlock}>
+                      <span style={styles.filterLabel}>Result logic</span>
+                      <span style={styles.filterValue}>
+                        {hasStateFilter
+                          ? "Timezone + selected states"
+                          : "Timezone only"}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 {job.error && (
                   <div style={styles.errorBox}>
                     {job.error}
                   </div>
                 )}
 
-                {outputFiles.length > 0 && (
-                  <div style={styles.fileList}>
-                    {outputFiles.map((file, index) => (
-                      <button
-                        key={`${file.fileName}-${index}`}
-                        onClick={() => downloadFile(file.url)}
-                        style={styles.fileChip}
-                      >
-                        {file.zone || file.state || file.label || "File"} -{" "}
-                        {file.rowCount || 0} rows
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <div style={styles.outputGrid}>
+                  {renderOutputGroup(
+                    "Timezone output",
+                    timezoneFiles,
+                    (file) => file.zone || "Timezone"
+                  )}
+
+                  {renderOutputGroup(
+                    "State extracts",
+                    stateFiles,
+                    (file) => file.state || "State"
+                  )}
+                </div>
               </div>
             );
           })}
@@ -933,6 +1000,106 @@ const styles = {
     marginTop: "14px",
     color: "#374151",
     fontSize: "13px",
+  },
+
+  filterSummary: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+    gap: "10px",
+    marginTop: "14px",
+    padding: "12px",
+    background: "#f8fafc",
+    border: "1px solid #e5e7eb",
+    borderRadius: "8px",
+  },
+
+  filterBlock: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "4px",
+  },
+
+  filterLabel: {
+    color: "#6b7280",
+    fontSize: "12px",
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+
+  filterValue: {
+    color: "#111827",
+    fontSize: "13px",
+    fontWeight: "700",
+    lineHeight: 1.35,
+  },
+
+  outputGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+    gap: "14px",
+    marginTop: "14px",
+  },
+
+  outputGroup: {
+    border: "1px solid #e5e7eb",
+    borderRadius: "8px",
+    overflow: "hidden",
+    background: "#fff",
+  },
+
+  outputGroupHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: "10px",
+    padding: "10px 12px",
+    background: "#f9fafb",
+    borderBottom: "1px solid #e5e7eb",
+    color: "#111827",
+    fontWeight: "800",
+    fontSize: "13px",
+  },
+
+  outputCount: {
+    color: "#6b7280",
+    fontWeight: "700",
+  },
+
+  outputList: {
+    display: "flex",
+    flexDirection: "column",
+  },
+
+  outputItem: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "12px",
+    padding: "12px",
+    borderBottom: "1px solid #f1f5f9",
+  },
+
+  outputName: {
+    margin: 0,
+    color: "#111827",
+    fontWeight: "800",
+  },
+
+  outputMeta: {
+    margin: "4px 0 0",
+    color: "#6b7280",
+    fontSize: "12px",
+    fontWeight: "700",
+  },
+
+  outputDownloadBtn: {
+    background: "#2563eb",
+    color: "#fff",
+    border: "none",
+    padding: "8px 10px",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontWeight: "700",
+    flexShrink: 0,
   },
 
   fileList: {
