@@ -302,7 +302,7 @@ function Home() {
           <div style={styles.statePanel}>
             <div style={styles.statePanelHeader}>
               <label style={styles.label}>
-                State extracts
+                State filter
               </label>
 
               {selectedStates.length > 0 && (
@@ -407,7 +407,6 @@ function Home() {
         {!jobsError &&
           trackedJobs.map((job) => {
             const timezoneFiles = job.timezoneOutputs || [];
-            const stateFiles = job.stateExtracts || [];
             const hasStateFilter = job.selectedStates?.length > 0;
 
             return (
@@ -509,15 +508,11 @@ function Home() {
 
                 <div style={styles.outputGrid}>
                   {renderOutputGroup(
-                    "Timezone output",
+                    hasStateFilter
+                      ? "Timezone + selected states"
+                      : "Timezone output",
                     timezoneFiles,
                     (file) => file.zone || "Timezone"
-                  )}
-
-                  {renderOutputGroup(
-                    "State extracts",
-                    stateFiles,
-                    (file) => file.state || "State"
                   )}
                 </div>
               </div>
@@ -693,23 +688,6 @@ function Home() {
               )
             )}
 
-            {result.stateFiles?.map(
-              (f, i) => (
-                <button
-                  key={`state-${i}`}
-                  onClick={() =>
-                    downloadFile(
-                      f.url
-                    )
-                  }
-                  style={
-                    styles.downloadBtn
-                  }
-                >
-                  Download {f.state}
-                </button>
-              )
-            )}
           </div>
         )}
     </div>
