@@ -327,6 +327,11 @@ function TimezoneSplit() {
                     <p>{count}</p>
                   </div>
                 ))}
+
+                <div style={styles.zoneCard}>
+                  <h4>Duplicates removed</h4>
+                  <p>{result.duplicateRowsRemoved || 0}</p>
+                </div>
               </div>
 
               {result.selectedStates?.length > 0 && (
@@ -422,6 +427,9 @@ function TimezoneSplit() {
                     <div style={styles.jobStats}>
                       <span>Input: {job.totalInputRows || 0}</span>
                       <span>Output: {job.totalOutputRows || 0}</span>
+                      <span>
+                        Duplicates removed: {job.duplicateRowsRemoved || 0}
+                      </span>
                       <span>Timezone: {job.selectedTimezone || "ALL"}</span>
                     </div>
 
